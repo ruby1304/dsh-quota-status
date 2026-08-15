@@ -141,7 +141,7 @@
 			"#dsh-quota-card .dsh-footer-icon.is-loading{animation:dsh-quota-spin .7s linear infinite}",
 			"#dsh-quota-card .dsh-footer-icon.is-active{color:var(--dsw-static-deepseek-500,#4176e6);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
 			"@keyframes dsh-quota-spin{to{transform:rotate(360deg)}}",
-			"#dsh-quota-card .dsh-settings{padding:4px 8px}",
+			"#dsh-quota-status > .dsh-settings{position:absolute;right:0;bottom:100%;margin-bottom:6px;width:300px;max-height:calc(100vh - 120px);overflow:auto;padding:10px 12px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:0 8px 24px rgba(15,17,21,.14),0 2px 6px rgba(15,17,21,.08);box-sizing:border-box;z-index:1}",
 			"#dsh-quota-card .dsh-setting-title{margin-bottom:6px;color:var(--dsw-alias-label-primary,#1b1b1c);font-size:12px;font-weight:600;line-height:18px}",
 			"#dsh-quota-card .dsh-setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;color:var(--dsw-alias-label-primary,#1b1b1c);font-size:12px;line-height:18px}",
 			"#dsh-quota-card .dsh-setting-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -655,9 +655,9 @@
 				};
 
 				return React.createElement("div", rootProps,
+					settingsEl,
 					React.createElement("div", { id: "dsh-quota-card" },
 						rowEls,
-						settingsEl,
 						footerEl));
 			}
 

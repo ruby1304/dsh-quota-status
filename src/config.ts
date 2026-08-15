@@ -4,7 +4,7 @@
  * @module dsh-quota-status/config
  */
 
-import Schema from '@deepseek-ai/schemastery'
+import Schema from './vendor/schemastery.mjs'
 
 export const PLUGIN_NAME = 'dsh-quota-status'
 export const PLUGIN_ID = 'quota-status'
@@ -79,7 +79,7 @@ export const ConfigSchema = Schema.object({
     credential: Schema.string().default(''),
     endpoint: Schema.string().default(''),
   })).default(DEFAULT_PROVIDERS),
-})
+}) as unknown as (value?: unknown) => Config
 
 export function resolveConfig(config: Config): Config {
   const providers = config.providers

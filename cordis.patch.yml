@@ -1,0 +1,6 @@
+# dsh-quota-status bundle layer: one plugin row, usable defaults.
+# Users override provider rows / refresh interval in their profile
+# cordis.patch.yml by targeting id quota-status.
+- insert:
+    - id: quota-status
+      name: 'dsh-quota-status'

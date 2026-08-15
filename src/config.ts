@@ -54,7 +54,7 @@ export const DEFAULT_PROVIDERS: ProviderRow[] = [
   },
   {
     id: 'kimi-coding',
-    label: 'Kimi Coding',
+    label: 'Kimi',
     kind: 'kimi-usage',
     credential: 'KIMI_CODING_API_KEY',
     endpoint: 'https://api.kimi.com/coding/v1/usages',

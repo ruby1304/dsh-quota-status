@@ -41,6 +41,7 @@
 				notAvailable: "当前不可用",
 				balanceSub: "充值 {topped} · 赠送 {granted}",
 				weekly: "周限",
+				weeklyShort: "周",
 				rolling5h: "5 小时",
 				remaining: "剩余 {remaining}/{limit}",
 				resetAt: "{when} 重置",
@@ -75,6 +76,7 @@
 				notAvailable: "Unavailable",
 				balanceSub: "Topped-up {topped} · Granted {granted}",
 				weekly: "Weekly",
+				weeklyShort: "Wk",
 				rolling5h: "5h",
 				remaining: "{remaining}/{limit} left",
 				resetAt: "resets {when}",
@@ -96,21 +98,24 @@
 		var REFRESH_CHOICES = [15000, 30000, 60000, 120000, 300000];
 
 		var CSS = [
-			"#dsh-quota-status{position:fixed;left:0;top:0;z-index:900;display:flex;flex-direction:column;align-items:flex-end;pointer-events:auto;color:var(--dsw-alias-label-primary,#1b1b1c);font-family:var(--dsw-font-family,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif);font-size:13px;line-height:1.45;user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab}",
+			"#dsh-quota-status{position:fixed;right:16px;bottom:16px;width:300px;z-index:900;display:flex;flex-direction:column;gap:6px;align-items:stretch;pointer-events:auto;color:var(--dsw-alias-label-primary,#1b1b1c);font-family:var(--dsw-font-family,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif);font-size:12px;line-height:1.45;user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab}",
 			"#dsh-quota-status.is-dragging{cursor:grabbing}",
 			"#dsh-quota-status.is-dragging #dsh-quota-capsule,#dsh-quota-status.is-dragging #dsh-quota-card{box-shadow:var(--dsw-shadow-lv3,0 12px 28px rgba(15,17,21,.16),0 4px 12px rgba(15,17,21,.1));transition:none}",
-			"#dsh-quota-capsule{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 13px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:999px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:var(--dsw-shadow-lv2,0 4px 12px rgba(15,17,21,.02),0 2px 8px rgba(15,17,21,.04));cursor:grab;font:inherit;transition:background-color 140ms ease,border-color 140ms ease,box-shadow 140ms ease}",
+			"#dsh-quota-capsule{width:100%;display:flex;align-items:center;gap:8px;height:30px;padding:0 10px 0 12px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:999px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:var(--dsw-shadow-lv2,0 4px 12px rgba(15,17,21,.02),0 2px 8px rgba(15,17,21,.04));cursor:grab;font:inherit;box-sizing:border-box;transition:background-color 140ms ease,border-color 140ms ease,box-shadow 140ms ease}",
 			"#dsh-quota-capsule:hover{background:var(--dsw-alias-bg-overlay,#ebeef2);border-color:var(--dsw-alias-border-l2,rgba(0,0,0,.16))}",
+			"#dsh-quota-capsule .dsh-capsule-summary{flex:1;min-width:0;display:flex;align-items:center;gap:7px;overflow:hidden}",
 			"#dsh-quota-capsule .dsh-capsule-dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--dsw-static-neutral-bluish-400,#adb2b8)}",
 			"#dsh-quota-capsule .dsh-capsule-dot.state-ok{background:var(--dsw-static-green-500,#22c55e)}",
 			"#dsh-quota-capsule .dsh-capsule-dot.state-warn{background:var(--dsw-static-amber-500,#f59e0b)}",
 			"#dsh-quota-capsule .dsh-capsule-dot.state-error{background:var(--dsw-static-red-500,#ef4444)}",
-			"#dsh-quota-capsule .dsh-capsule-item{font-variant-numeric:tabular-nums;white-space:nowrap}",
+			"#dsh-quota-capsule .dsh-capsule-item{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+			"#dsh-quota-capsule .dsh-capsule-seg{display:inline-flex;align-items:center;gap:6px;flex:none}",
+			"#dsh-quota-capsule .dsh-capsule-sep{color:var(--dsw-alias-label-tertiary,#818590);flex:none}",
 			"#dsh-quota-capsule .dsh-capsule-item.state-loading{color:var(--dsw-alias-label-secondary,#61666b)}",
 			"#dsh-quota-capsule .dsh-capsule-item.state-warn{color:var(--dsw-static-amber-500,#f59e0b)}",
 			"#dsh-quota-capsule .dsh-capsule-item.state-error{color:var(--dsw-static-red-500,#ef4444)}",
 			"#dsh-quota-capsule .dsh-capsule-chevron{color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:1}",
-			"#dsh-quota-card{width:300px;max-width:calc(100vw - 32px);margin-top:6px;padding:12px 14px 14px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:14px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:var(--dsw-shadow-lv3,0 10px 30px rgba(15,17,21,.1),0 2px 8px rgba(15,17,21,.06));box-sizing:border-box;cursor:grab}",
+			"#dsh-quota-card{width:100%;margin-top:0;padding:12px 14px 14px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:14px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:var(--dsw-shadow-lv3,0 10px 30px rgba(15,17,21,.1),0 2px 8px rgba(15,17,21,.06));box-sizing:border-box;cursor:grab}",
 			"#dsh-quota-card .dsh-quota-header{display:flex;align-items:center;justify-content:space-between;min-height:24px;margin-bottom:10px}",
 			"#dsh-quota-card .dsh-quota-title{color:var(--dsw-alias-label-primary,#1b1b1c);font-size:13px;font-weight:600;letter-spacing:.01em;line-height:20px}",
 			"#dsh-quota-card .dsh-quota-actions{display:flex;gap:2px;margin:-3px -4px -3px 0}",
@@ -185,14 +190,11 @@
 		}
 
 		var POS_STORAGE_KEY = "dsh-quota-status:pos";
-		var CARD_WIDTH = 300;
-		var MARGIN = 10;
+		var ROOT_EDGE = 16;
+		var SCREEN_MARGIN = 10;
 
 		function defaultPos() {
-			return {
-				x: Math.max(globalThis.innerWidth - CARD_WIDTH - 16, MARGIN),
-				y: Math.max(globalThis.innerHeight - 52 - 16, MARGIN)
-			};
+			return { dx: 0, dy: 0 };
 		}
 
 		function loadPos() {
@@ -200,10 +202,11 @@
 				var raw = globalThis.localStorage.getItem(POS_STORAGE_KEY);
 				if (raw !== null) {
 					var saved = JSON.parse(raw);
-					if (typeof saved.x === "number" && Number.isFinite(saved.x)
-						&& typeof saved.y === "number" && Number.isFinite(saved.y)) {
-						return { x: saved.x, y: saved.y };
+					if (typeof saved.dx === "number" && Number.isFinite(saved.dx)
+						&& typeof saved.dy === "number" && Number.isFinite(saved.dy)) {
+						return { dx: saved.dx, dy: saved.dy };
 					}
+					// Legacy left/top records are ignored; users just re-drag once.
 				}
 			} catch (err) {}
 			return defaultPos();
@@ -215,10 +218,20 @@
 			} catch (err) {}
 		}
 
-		function clampPos(x, y, width, height) {
+		/**
+		 * The root is anchored at right/bottom and moved with translate(dx,dy),
+		 * so clamping is a pure box calculation against the viewport.
+		 */
+		function clampPos(pos, width, height) {
+			var baseLeft = Math.max(ROOT_EDGE, globalThis.innerWidth - width - ROOT_EDGE);
+			var baseTop = Math.max(ROOT_EDGE, globalThis.innerHeight - height - ROOT_EDGE);
+			var minDx = SCREEN_MARGIN - baseLeft;
+			var maxDx = (globalThis.innerWidth - SCREEN_MARGIN) - (baseLeft + width);
+			var minDy = SCREEN_MARGIN - baseTop;
+			var maxDy = (globalThis.innerHeight - SCREEN_MARGIN) - (baseTop + height);
 			return {
-				x: Math.min(Math.max(x, MARGIN), Math.max(MARGIN, globalThis.innerWidth - width - MARGIN)),
-				y: Math.min(Math.max(y, MARGIN), Math.max(MARGIN, globalThis.innerHeight - height - MARGIN))
+				dx: Math.min(Math.max(pos.dx, minDx), Math.max(minDx, maxDx)),
+				dy: Math.min(Math.max(pos.dy, minDy), Math.max(minDy, maxDy))
 			};
 		}
 
@@ -259,6 +272,13 @@
 			var symbol = currency === "USD" ? "$" : currency === "CNY" ? "¥" : "";
 			var text = amount.toFixed(2);
 			return symbol ? symbol + text : text + " " + currency;
+		}
+
+		/** Compact provider label for the collapsed capsule. */
+		function capsuleLabel(spec) {
+			if (spec.id === "kimi-coding") return "Kimi";
+			if (spec.id === "deepseek") return "DeepSeek";
+			return spec.label || spec.id;
 		}
 
 		function balanceState(amount, critical, warn) {
@@ -306,6 +326,7 @@
 					kind: spec.kind,
 					status: status,
 					summary: money(v.amount, v.currency),
+					capsule: money(v.amount, v.currency),
 					value: money(v.amount, v.currency),
 					sub: v.available === false
 						? t("notAvailable")
@@ -325,11 +346,13 @@
 					windows.push({ window: w, status: wstatus });
 				}
 				var label = worst ? (worst.window.key === "weekly" ? t("weekly") : worst.window.label) : "";
+				var shortLabel = worst ? (worst.window.key === "weekly" ? t("weeklyShort") : worst.window.label) : "";
 				var summary = worst ? label + " " + worst.window.percentRemaining + "%" : "—";
 				return {
 					kind: spec.kind,
 					status: worst ? worst.status : "loading",
 					summary: summary,
+					capsule: worst ? shortLabel + " " + worst.window.percentRemaining + "%" : "—",
 					value: "",
 					sub: u.membership ? tplReplace(t("membership"), { level: u.membership }) : "",
 					windows: windows,
@@ -397,7 +420,7 @@
 					if (!el) return;
 					var rect = el.getBoundingClientRect();
 					if (rect.width <= 0 || rect.height <= 0) return;
-					setPosStateSafe(clampPos(posRef.current.x, posRef.current.y, rect.width, rect.height));
+					setPosStateSafe(clampPos(posRef.current, rect.width, rect.height));
 				}, [expanded, settingsOpen, dataById, specs]);
 
 				function setPosStateSafe(next) {
@@ -408,8 +431,7 @@
 				function onPointerDown(e) {
 					if (e.button !== 0 && e.pointerType === "mouse") return;
 					if (isInteractiveTarget(e.target)) return;
-					if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-					dragRef.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: posRef.current.x, oy: posRef.current.y, moved: false };
+					dragRef.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, odx: posRef.current.dx, ody: posRef.current.dy, moved: false, captured: false };
 					draggingState[1](true);
 				}
 
@@ -419,13 +441,19 @@
 					var dx = e.clientX - d.sx;
 					var dy = e.clientY - d.sy;
 					if (Math.abs(dx) + Math.abs(dy) > 5) {
-						d.moved = true;
-						suppressClickRef.current = true;
+						if (!d.moved) {
+							d.moved = true;
+							suppressClickRef.current = true;
+							if (!d.captured && e.currentTarget.setPointerCapture) {
+								d.captured = true;
+								e.currentTarget.setPointerCapture(e.pointerId);
+							}
+						}
 					}
 					var el = rootRef.current;
-					var width = el ? el.offsetWidth : CARD_WIDTH;
+					var width = el ? el.offsetWidth : 300;
 					var height = el ? el.offsetHeight : 44;
-					setPosStateSafe(clampPos(d.ox + dx, d.oy + dy, width, height));
+					setPosStateSafe(clampPos({ dx: d.odx + dx, dy: d.ody + dy }, width, height));
 				}
 
 				function onPointerUp(e) {
@@ -448,7 +476,7 @@
 				var dragProps = {
 					ref: rootRef,
 					className: "dsh-quota-drag",
-					style: { left: pos.x + "px", top: pos.y + "px" },
+					style: { transform: "translate(" + pos.dx + "px, " + pos.dy + "px)" },
 					onPointerDown: onPointerDown,
 					onPointerMove: onPointerMove,
 					onPointerUp: onPointerUp,
@@ -538,49 +566,59 @@
 					}
 				}
 
-				if (!expanded) {
-					var pairs = [];
-					if (specs === null && loadError !== null) {
-						pairs.push(React.createElement("span", { key: "err", className: "dsh-capsule-item state-error" }, "—"));
-					} else if (rows.length === 0) {
-						pairs.push(React.createElement("span", { key: "none", className: "dsh-capsule-item state-loading" }, t("allHidden")));
-					} else {
-						for (var pi = 0; pi < rows.length; pi++) {
-							var rspec = rows[pi];
-							var view = views[rspec.id];
-							pairs.push(React.createElement("span", { key: rspec.id + "-dot", className: "dsh-capsule-dot state-" + view.status }));
-							pairs.push(React.createElement("span", { key: rspec.id + "-name", className: "dsh-capsule-item state-" + view.status }, rspec.label));
-							pairs.push(React.createElement("span", { key: rspec.id + "-value", className: "dsh-capsule-item state-" + view.status }, view.summary));
-							if (pi < rows.length - 1) pairs.push(React.createElement("span", { key: rspec.id + "-sep", className: "dsh-capsule-item" }, "·"));
-						}
+				var capsuleSegments = [];
+				if (specs === null && loadError !== null) {
+					capsuleSegments.push(React.createElement("span", { key: "err", className: "dsh-capsule-item state-error" }, "—"));
+				} else if (rows.length === 0) {
+					capsuleSegments.push(React.createElement("span", { key: "none", className: "dsh-capsule-item state-loading" }, t("allHidden")));
+				} else {
+					var summaryParts = [];
+					for (var pi = 0; pi < rows.length; pi++) {
+						var rspec = rows[pi];
+						var view = views[rspec.id];
+						var segText = view.capsule !== undefined ? view.capsule : view.summary;
+						if (rspec.kind === "deepseek-balance") segText = capsuleLabel(rspec) + " " + view.summary;
+						else segText = capsuleLabel(rspec) + " " + segText;
+						summaryParts.push(React.createElement("span", { key: rspec.id, className: "dsh-capsule-seg" },
+							React.createElement("span", { className: "dsh-capsule-dot state-" + view.status }),
+							React.createElement("span", { className: "dsh-capsule-item state-" + view.status }, segText)));
+						if (pi < rows.length - 1) summaryParts.push(React.createElement("span", { key: rspec.id + "-sep", className: "dsh-capsule-sep" }, "·"));
 					}
-					pairs.push(React.createElement("span", { key: "chevron", className: "dsh-capsule-chevron" }, "▴"));
-					return React.createElement("div", {
-						id: "dsh-quota-status",
-						ref: dragProps.ref,
-						className: (dragging ? " is-dragging" : ""),
-						style: dragProps.style,
-						onPointerDown: dragProps.onPointerDown,
-						onPointerMove: dragProps.onPointerMove,
-						onPointerUp: dragProps.onPointerUp,
-						onPointerCancel: dragProps.onPointerCancel,
-						onClick: dragProps.onClick,
-						onKeyDown: dragProps.onKeyDown,
-						tabIndex: 0,
-						role: "group",
-						"aria-label": dragProps["aria-label"]
-					},
-						React.createElement("button", {
-							id: "dsh-quota-capsule",
-							type: "button",
-							"aria-label": t("expand"),
-							"aria-expanded": "false",
-							onClick: function () {
-								if (suppressClickRef.current) return;
-								setExpanded(true);
-							}
-						}, pairs));
+					capsuleSegments.push(React.createElement("span", { key: "summary", className: "dsh-capsule-summary" }, summaryParts));
 				}
+				capsuleSegments.push(React.createElement("span", { key: "chevron", className: "dsh-capsule-chevron" }, expanded ? "▾" : "▴"));
+
+				var capsuleEl = React.createElement("button", {
+					id: "dsh-quota-capsule",
+					type: "button",
+					"aria-label": expanded ? t("collapse") : t("expand"),
+					"aria-expanded": expanded ? "true" : "false",
+					onClick: function () {
+						if (suppressClickRef.current) return;
+						setExpanded(!expanded);
+					}
+				}, capsuleSegments);
+
+				var rootProps = {
+					id: "dsh-quota-status",
+					ref: dragProps.ref,
+					className: dragging ? " is-dragging" : "",
+					style: dragProps.style,
+					onPointerDown: dragProps.onPointerDown,
+					onPointerMove: dragProps.onPointerMove,
+					onPointerUp: dragProps.onPointerUp,
+					onPointerCancel: dragProps.onPointerCancel,
+					onClick: dragProps.onClick,
+					onKeyDown: dragProps.onKeyDown,
+					tabIndex: 0,
+					role: "group",
+					"aria-label": dragProps["aria-label"]
+				};
+				var wrapRoot = function (children) {
+					return React.createElement("div", rootProps, children);
+				};
+
+				if (!expanded) return wrapRoot(capsuleEl);
 
 				var bodyChildren = [];
 				if (settingsOpen) {
@@ -665,46 +703,29 @@
 					}
 				}
 
-				return React.createElement("div", {
-					id: "dsh-quota-status",
-					ref: dragProps.ref,
-					className: (dragging ? " is-dragging" : ""),
-					style: dragProps.style,
-					onPointerDown: dragProps.onPointerDown,
-					onPointerMove: dragProps.onPointerMove,
-					onPointerUp: dragProps.onPointerUp,
-					onPointerCancel: dragProps.onPointerCancel,
-					onClick: dragProps.onClick,
-					onKeyDown: dragProps.onKeyDown,
-					tabIndex: 0,
-					role: "group",
-					"aria-label": dragProps["aria-label"]
-				},
-					React.createElement("div", { id: "dsh-quota-card" },
-						React.createElement("div", { className: "dsh-quota-header" },
-							React.createElement("div", { className: "dsh-quota-title" }, t("title")),
-							React.createElement("div", { className: "dsh-quota-actions" },
-								React.createElement("button", {
-									className: "dsh-quota-icon" + (refreshing ? " is-loading" : ""),
-									type: "button",
-									"aria-label": t("refresh"),
-									disabled: refreshing,
-									onClick: function () { refreshAll(); }
-								}, "↻"),
-								React.createElement("button", {
-									className: "dsh-quota-icon" + (settingsOpen ? " is-active" : ""),
-									type: "button",
-									"aria-label": settingsOpen ? t("closeSettings") : t("openSettings"),
-									"aria-expanded": settingsOpen ? "true" : "false",
-									onClick: function () { setSettingsOpen(!settingsOpen); }
-								}, "⚙"),
-								React.createElement("button", {
-									className: "dsh-quota-icon",
-									type: "button",
-									"aria-label": t("collapse"),
-									onClick: function () { setExpanded(false); }
-								}, "▾"))),
-						bodyChildren));
+				var cardEl = React.createElement("div", { id: "dsh-quota-card" },
+					React.createElement("div", { className: "dsh-quota-header" },
+						React.createElement("div", { className: "dsh-quota-title" }, t("title")),
+						React.createElement("div", { className: "dsh-quota-actions" },
+							React.createElement("button", {
+								className: "dsh-quota-icon" + (refreshing ? " is-loading" : ""),
+								type: "button",
+								"aria-label": t("refresh"),
+								disabled: refreshing,
+								onClick: function () { refreshAll(); }
+							}, "↻"),
+							React.createElement("button", {
+								className: "dsh-quota-icon" + (settingsOpen ? " is-active" : ""),
+								type: "button",
+								"aria-label": settingsOpen ? t("closeSettings") : t("openSettings"),
+								"aria-expanded": settingsOpen ? "true" : "false",
+								onClick: function () { setSettingsOpen(!settingsOpen); }
+							}, "⚙")
+						)
+					),
+					bodyChildren);
+
+				return wrapRoot([cardEl, capsuleEl]);
 			}
 
 			function ProviderRow(props) {

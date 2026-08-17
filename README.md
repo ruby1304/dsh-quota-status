@@ -18,6 +18,7 @@
 - **余额分档着色**：DeepSeek 余额数值与状态点按金额变色（绿 ≥100 · 黄 20–99 · 红 1–19 · 灰 <1），一眼看出紧张程度。
 - **波峰波谷提醒**：DeepSeek 行内嵌「低谷 / 高峰」时段徽标（2026-08-17 起高峰为北京时间每日 09:00–12:00、14:00–18:00，含午间 12:00–14:00 在内的其余时段均为低谷半价；完整时段表在徽标 tooltip 里），展开详情用一句话讲明当前时段与距离切换的倒计时，每秒跟随系统时钟刷新。
 - 点击某一行原地展开该账户详情（DeepSeek 充值/赠送拆分 + 峰谷一句话；Kimi 各窗口进度条、剩余量与重置倒计时），再点收起；详情底部有更新时间与手动刷新。
+- Kimi 或 ChatGPT 的窗口耗尽（0%）且服务端提供重置时间时，收起态直接追加实时倒计时；未耗尽窗口仍保持极简百分比格式。
 - 可拖动：按住卡片空白处拖到任意位置，位置记忆在浏览器本地。
 - 60 秒自动刷新（YAML 可调），页面隐藏时暂停，回到前台立即刷新。
 - 中英双语（跟随界面语言），跟随 DSH 设计 token（`--dsw-alias-*`），自动适配深浅主题。
@@ -72,6 +73,12 @@ dsh web
 
 `providers` 列表会整体替换默认列表；`kind` 支持 `deepseek-balance`、`kimi-usage` 与 `codex-usage`。`codex-usage` 行只在宿主进程读取 CLIProxyAPI 的本地 OAuth 授权文件（`access_token` + `account_id`），token 绝不进入浏览器或任何响应。
 
+### 额外配额行 / Extra quota rows
+
+统一卡片声明 root-scoped list Slot `dsh-quota-status.extra-row`。其他本机插件可以向该 Slot 注册额外配额行，并通过 Slot owner 的 `renderRow()` 提交业务无关、归一化后的 `meter` 展示数据（名称、已用、上限、剩余百分比、单位、重置时间和阈值）。本插件统一负责布局、展开交互、键盘语义、金额与倒计时格式、进度条及警告颜色。
+
+额外插件应在自己的 Host 中查询上游和处理业务规则，Client 只接收归一化展示数据。凭证、token、API key 和 Authorization header 不得通过 RPC 或 Slot props 传递。卸载任一插件时，Cordis 会随父注册或扩展注册的 disposer 清理对应 Slot 生命周期。
+
 ## 数据源 / Data sources
 
 | Provider | Endpoint | Meaning |
@@ -91,7 +98,7 @@ npm run build          # 输出 lib/（host + client bundle）
 
 - `src/providers.ts`：纯函数适配器，fixture 单测在 `tests/providers.spec.ts`。
 - `src/index.ts`：host 半身，拥有 `/dsh-quota-status` RPC channel（`specs` / `fetch-all`）。
-- `src/client.ts`：浏览器半身，注册 `shell.overlay` 槽位。
+- `src/client.ts`：浏览器半身，注册 `shell.overlay` 和业务无关的额外配额行子 Slot。
 
 ## 安全 / Security
 

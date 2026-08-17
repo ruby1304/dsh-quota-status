@@ -49,6 +49,8 @@ export interface Config {
   codexBinary: string
   /** CLIProxyAPI config path used by the ChatGPT login action. */
   codexConfigPath: string
+  /** Optional proxy for ChatGPT usage requests; network failures fall back to direct. */
+  usageProxyUrl: string
   /** Provider rows. The default list is DeepSeek + Kimi For Coding. */
   providers: ProviderRow[]
 }
@@ -85,6 +87,7 @@ export const ConfigSchema = Schema.object({
   criticalUsagePercent: Schema.number().step(1).min(0).max(100).default(15),
   codexBinary: Schema.string().default('cliproxyapi'),
   codexConfigPath: Schema.string().default('~/.cli-proxy-api/config.yaml'),
+  usageProxyUrl: Schema.string().default(''),
   providers: Schema.array(Schema.object({
     id: Schema.string().default(''),
     label: Schema.string().default(''),

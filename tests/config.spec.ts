@@ -11,6 +11,7 @@ describe('ConfigSchema', () => {
     expect(config.criticalBalance).toBe(10)
     expect(config.codexBinary).toBe('cliproxyapi')
     expect(config.codexConfigPath).toBe('~/.cli-proxy-api/config.yaml')
+    expect(config.usageProxyUrl).toBe('')
     expect(config.providers).toHaveLength(DEFAULT_PROVIDERS.length)
     expect(config.providers.map((row) => row.id)).toEqual(['deepseek', 'kimi-coding'])
   })

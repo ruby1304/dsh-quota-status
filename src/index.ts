@@ -141,7 +141,13 @@ export function apply(ctx: Context, config: Config) {
         }
         base.configured = true
         try {
-          const view = await queryCodexUsage(provider.endpoint, auth, resolved.timeoutMs)
+          const view = await queryCodexUsage(
+            provider.endpoint,
+            auth,
+            resolved.timeoutMs,
+            fetch,
+            resolved.usageProxyUrl,
+          )
           results.push({ ...base, status: 'ok', view })
         } catch (error) {
           results.push({

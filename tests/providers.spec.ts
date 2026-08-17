@@ -242,6 +242,40 @@ describe('queryCodexUsage', () => {
     expect(seen[0]?.headers['chatgpt-account-id']).toBe('acc')
     expect(view.windows[0]?.key).toBe('weekly')
   })
+
+  it('uses the configured proxy for the first request', async () => {
+    const dispatchers: unknown[] = []
+    const fetchImpl = async (_url: string, init: RequestInit) => {
+      dispatchers.push((init as RequestInit & { dispatcher?: unknown }).dispatcher)
+      return new Response(JSON.stringify({
+        rate_limit: {
+          primary_window: { used_percent: 10, limit_window_seconds: 18000, reset_at: 1787281247 },
+        },
+      }), { status: 200 })
+    }
+    await queryCodexUsage('https://chatgpt.com/backend-api/wham/usage', { accessToken: 'tok', accountId: 'acc', file: '/x' }, 15000, fetchImpl, 'http://127.0.0.1:7897')
+    expect(dispatchers).toHaveLength(1)
+    expect(dispatchers[0]).toBeDefined()
+  })
+
+  it('falls back to direct when the proxy request cannot connect', async () => {
+    const dispatchers: unknown[] = []
+    const fetchImpl = async (_url: string, init: RequestInit) => {
+      const dispatcher = (init as RequestInit & { dispatcher?: unknown }).dispatcher
+      dispatchers.push(dispatcher)
+      if (dispatcher !== undefined) throw new TypeError('proxy unavailable')
+      return new Response(JSON.stringify({
+        rate_limit: {
+          primary_window: { used_percent: 10, limit_window_seconds: 18000, reset_at: 1787281247 },
+        },
+      }), { status: 200 })
+    }
+    const view = await queryCodexUsage('https://chatgpt.com/backend-api/wham/usage', { accessToken: 'tok', accountId: 'acc', file: '/x' }, 15000, fetchImpl, 'http://127.0.0.1:7897')
+    expect(dispatchers).toHaveLength(2)
+    expect(dispatchers[0]).toBeDefined()
+    expect(dispatchers[1]).toBeUndefined()
+    expect(view.windows[0]?.key).toBe('5h')
+  })
 })
 
 describe('deepSeekPeakInfo', () => {

@@ -1,6 +1,6 @@
 {
   "name": "dsh-quota-status",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Live DeepSeek, Kimi and ChatGPT subscription quota widget for DeepSeek Harness web, with an in-app ChatGPT OAuth login card.",
   "type": "module",
   "main": "lib/index.js",
@@ -67,6 +67,9 @@
     "@deepseek-ai/cordis": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "undici": "^7.29.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",

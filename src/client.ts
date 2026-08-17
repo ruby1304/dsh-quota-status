@@ -28,6 +28,7 @@
 		var React = require("react");
 
 		var CHANNEL = "/dsh-quota-status";
+		var EXTRA_ROW_SLOT = "dsh-quota-status.extra-row";
 		var POS_STORAGE_KEY = "dsh-quota-status:pos";
 		var LEGACY_SETTINGS_KEY = "dsh-quota-status:settings";
 		var NS = "quota-status";
@@ -49,6 +50,8 @@
 				weekly: "周限",
 				weeklyShort: "周",
 				remaining: "剩余 {remaining}/{limit}",
+				usedOfLimit: "今日已用 {used} / {limit}",
+				remainingAmount: "剩余 {remaining}",
 				resetAt: "{when} 重置",
 				resetIn: "还有 {span}",
 				membership: "套餐 {level}",
@@ -91,6 +94,8 @@
 				weekly: "Weekly",
 				weeklyShort: "Wk",
 				remaining: "{remaining}/{limit} left",
+				usedOfLimit: "Used today {used} / {limit}",
+				remainingAmount: "{remaining} left",
 				resetAt: "resets {when}",
 				resetIn: "{span} left",
 				membership: "Plan {level}",
@@ -135,7 +140,7 @@
 			"#dsh-quota-card .state-ok .dsh-status-dot{background:var(--dsw-static-green-500,#22c55e)}",
 			"#dsh-quota-card .dsh-provider-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-secondary,#61666b);font-size:12px;line-height:18px}",
 			"#dsh-quota-card .dsh-provider-value{display:inline-flex;align-items:center;gap:5px;flex:none;font-weight:600;font-variant-numeric:tabular-nums;font-size:12px;line-height:18px;color:var(--dsw-alias-label-primary,#1b1b1c)}",
-			"#dsh-quota-card .dsh-provider-value .dsh-value-sep{color:var(--dsw-alias-label-tertiary,#818590);font-weight:400;margin:0 2px}",
+			"#dsh-quota-card .dsh-provider-value .dsh-value-sep{color:var(--dsw-alias-label-tertiary,#7f858f);font-weight:400;margin:0 2px}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-label{font-weight:500;color:var(--dsw-alias-label-secondary,#61666b);margin-right:2px}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-warn{color:var(--dsw-static-amber-500,#f59e0b)}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-error{color:var(--dsw-static-red-500,#ef4444)}",
@@ -150,8 +155,7 @@
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.lv-gray{color:#9ca3af}",
 			"#dsh-quota-card .dsh-peak-pill{flex:none;display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;letter-spacing:.01em;font-variant-numeric:tabular-nums}",
 			"#dsh-quota-card .dsh-peak-pill.is-offpeak{color:var(--dsw-static-green-500,#10b981);background:rgba(16,185,129,.14)}",
-			"#dsh-quota-card .dsh-peak-pill.is-peak{color:var(--dsw-alias-label-tertiary,#818590);background:var(--dsw-alias-bg-overlay,rgba(0,0,0,.05))}",
-			"#dsh-quota-card .dsh-row-chevron{flex:none;color:var(--dsw-alias-label-tertiary,#818590);font-size:9px;line-height:1;margin-left:2px}",
+			"#dsh-quota-card .dsh-peak-pill.is-peak{color:var(--dsw-alias-label-tertiary,#7f858f);background:var(--dsw-alias-bg-overlay,rgba(0,0,0,.05))}",
 			"#dsh-quota-card .dsh-quota-error{padding:4px 8px;color:var(--dsw-static-red-500,#ef4444);font-size:12px;line-height:18px;word-break:break-all}",
 			"#dsh-quota-card .dsh-provider-sub{padding:4px 8px;color:var(--dsw-alias-label-secondary,#61666b);font-size:12px;line-height:18px}",
 			"#dsh-quota-card .dsh-detail{margin:1px 6px 4px;padding:6px 8px;border-radius:8px;background:var(--dsw-alias-bg-overlay,#ebeef2);box-shadow:0 1px 3px rgba(15,17,21,.06);font-size:12px}",
@@ -163,11 +167,11 @@
 			"#dsh-quota-card .dsh-window-value{font-variant-numeric:tabular-nums;font-weight:600}",
 			"#dsh-quota-card .dsh-progress{position:relative;width:100%;height:4px;margin-top:4px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-bg-layer-2,#f0f1f3)}",
 			"#dsh-quota-card .dsh-progress-fill{height:100%;width:0;border-radius:inherit;background:var(--dsw-static-green-500,#22c55e);transition:width 300ms ease,background-color 160ms ease}",
-			"#dsh-quota-card .state-warn .dsh-progress-fill{background:var(--dsw-static-amber-500,#f59e0b)}",
-			"#dsh-quota-card .state-error .dsh-progress-fill{background:var(--dsw-static-red-500,#ef4444)}",
-			"#dsh-quota-card .dsh-window-caption{margin-top:4px;color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
+			"#dsh-quota-card .state-warn .dsh-progress-fill,#dsh-quota-card .dsh-progress-fill.state-warn{background:var(--dsw-static-amber-500,#f59e0b)}",
+			"#dsh-quota-card .state-error .dsh-progress-fill,#dsh-quota-card .dsh-progress-fill.state-error{background:var(--dsw-static-red-500,#ef4444)}",
+			"#dsh-quota-card .dsh-window-caption{margin-top:4px;color:var(--dsw-alias-label-tertiary,#7f858f);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
 			"#dsh-quota-card .dsh-detail-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:5px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}",
-			"#dsh-quota-card .dsh-detail-time{color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
+			"#dsh-quota-card .dsh-detail-time{color:var(--dsw-alias-label-tertiary,#7f858f);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
 			"#dsh-quota-card .dsh-detail-refresh{display:inline-grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:6px;color:var(--dsw-alias-label-secondary,#61666b);background:transparent;font-size:12px;line-height:1;cursor:pointer;transition:background-color .12s ease,color .12s ease}",
 			"#dsh-quota-card .dsh-detail-refresh:hover{color:var(--dsw-alias-label-primary,#1b1b1c);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
 			"#dsh-quota-card .dsh-detail-refresh:disabled{cursor:default;opacity:.55}",
@@ -282,6 +286,13 @@
 			return secs + "s";
 		}
 
+		function collapsedWindowValue(windowView, nowMs) {
+			var reset = windowView.percentRemaining <= 0 && windowView.resetAt
+				? " · " + fmtCountdown(windowView.resetAt, nowMs)
+				: "";
+			return windowView.percentRemaining + "%" + reset;
+		}
+
 		/** Minute-granularity span for the peak countdown: 7h30m / 45m. */
 		function fmtSpanMin(totalMin) {
 			var h = Math.floor(totalMin / 60);
@@ -352,6 +363,46 @@
 			return "ok";
 		}
 
+		/** Validate the business-neutral display contract supplied by an extra-row Slot entry. */
+		function normalizeExtraRow(input) {
+			if (input === null || typeof input !== "object") return null;
+			var id = typeof input.id === "string" ? input.id.trim() : "";
+			var label = typeof input.label === "string" ? input.label.trim() : "";
+			var statuses = ["loading", "missing", "error", "ok"];
+			if (id.length === 0 || label.length === 0 || statuses.indexOf(input.status) === -1) return null;
+			var row: any = {
+				id: id,
+				label: label,
+				status: input.status,
+				error: typeof input.error === "string" ? input.error : "",
+				fetchedAt: Number.isFinite(input.fetchedAt) ? input.fetchedAt : null,
+				refreshing: input.refreshing === true,
+				onRefresh: typeof input.onRefresh === "function" ? input.onRefresh : function () {}
+			};
+			if (input.status !== "ok") return row;
+			var view = input.view;
+			if (view === null || typeof view !== "object" || view.kind !== "meter") return null;
+			var resetMs = new Date(view.resetAt).getTime();
+			if (!Number.isFinite(view.used) || view.used < 0
+				|| !Number.isFinite(view.limit) || view.limit <= 0
+				|| !Number.isFinite(view.remaining) || view.remaining < 0
+				|| !Number.isFinite(view.percentRemaining) || view.percentRemaining < 0 || view.percentRemaining > 100
+				|| typeof view.unit !== "string" || view.unit.trim().length === 0
+				|| !Number.isFinite(resetMs)) return null;
+			row.view = {
+				kind: "meter",
+				used: view.used,
+				limit: view.limit,
+				remaining: view.remaining,
+				unit: view.unit.trim(),
+				percentRemaining: view.percentRemaining,
+				resetAt: new Date(resetMs).toISOString(),
+				warnPercent: Number.isFinite(view.warnPercent) ? Math.max(0, Math.min(100, view.warnPercent)) : 40,
+				criticalPercent: Number.isFinite(view.criticalPercent) ? Math.max(0, Math.min(100, view.criticalPercent)) : 15
+			};
+			return row;
+		}
+
 		/** Usage-style rows (Kimi plan windows, Codex subscription windows). */
 		function isUsageKind(kind) {
 			return kind === "kimi-usage" || kind === "codex-usage";
@@ -370,7 +421,7 @@
 			if (entry.status === "error" || !entry.view) {
 				return {
 					kind: spec.kind, status: "error", value: "—",
-					sub: entry.kind === "balance" || spec.kind === "deepseek-balance" ? t("balanceUnavailable") : t("usageUnavailable"),
+					sub: spec.kind === "deepseek-balance" ? t("balanceUnavailable") : t("usageUnavailable"),
 					windows: [], title: entry.error || t("fetchFailed")
 				};
 			}
@@ -525,8 +576,7 @@
 				}, []);
 
 				React.useEffect(function () {
-					var timer = window.setInterval(function () { clockState[1](Date.now()); }, 1000);
-					return function () { window.clearInterval(timer); };
+					return ctx.interval(function () { clockState[1](Date.now()); }, 1000);
 				}, []);
 
 				function onPointerDown(e) {
@@ -569,6 +619,26 @@
 				function toggleOpen(id) {
 					if (suppressClickRef.current) return;
 					setOpenId(function (current) { return current === id ? null : id; });
+				}
+
+				function renderExtraRow(input) {
+					var row = normalizeExtraRow(input);
+					if (row === null) return null;
+					var key = "extra:" + row.id;
+					var isOpen = openId === key;
+					return React.createElement(React.Fragment, { key: key },
+						React.createElement(ExtraQuotaRow, {
+							row: row,
+							t: t,
+							nowMs: nowMs,
+							open: isOpen,
+							onToggle: function () { toggleOpen(key); }
+						}),
+						isOpen ? React.createElement(ExtraQuotaDetail, {
+							row: row,
+							t: t,
+							nowMs: nowMs
+						}) : null);
 				}
 
 				var rows = specs ? (specs.rows || []) : [];
@@ -625,8 +695,9 @@
 					"aria-label": t("title")
 				};
 
+				var extraRows = props.renderSlot(EXTRA_ROW_SLOT, { renderRow: renderExtraRow });
 				return React.createElement("div", rootProps,
-					React.createElement("div", { id: "dsh-quota-card" }, rowEls));
+					React.createElement("div", { id: "dsh-quota-card" }, rowEls, extraRows));
 			}
 
 			function QuotaSettings() {
@@ -806,7 +877,7 @@
 						if (i > 0) valueChildren.push(React.createElement("span", { key: "sep" + i, className: "dsh-value-sep" }, "·"));
 						valueChildren.push(React.createElement("span", { key: win.key, className: "dsh-value-seg " + wstate },
 							React.createElement("span", { className: "dsh-value-label" }, (win.key === "weekly" ? t("weeklyShort") : win.label) + " "),
-							win.percentRemaining + "%"));
+							collapsedWindowValue(win, props.nowMs)));
 					}
 				} else {
 					valueChildren.push(React.createElement("span", { key: "main", className: "dsh-value-seg " + (view.tier ? "lv-" + view.tier : stateClass) }, view.value || "—"));
@@ -835,8 +906,7 @@
 				},
 					React.createElement("span", { className: "dsh-status-dot" }),
 					React.createElement("span", { className: "dsh-provider-name" }, spec.label),
-					React.createElement("span", { className: "dsh-provider-value" }, valueChildren),
-					React.createElement("span", { className: "dsh-row-chevron" }, props.open ? "▾" : "▴"));
+					React.createElement("span", { className: "dsh-provider-value" }, valueChildren));
 			}
 
 			function DetailFoot(props) {
@@ -851,6 +921,63 @@
 						disabled: props.refreshing,
 						onClick: function () { props.onRefresh(); }
 					}, "↻"));
+			}
+
+			function ExtraQuotaRow(props) {
+				var row = props.row;
+				var state = row.status === "ok" && row.view
+					? usageState(row.view.percentRemaining, row.view.criticalPercent, row.view.warnPercent)
+					: row.status === "loading" ? "loading" : "error";
+				var value = "—";
+				if (row.status === "loading") value = props.t("loading");
+				if (row.status === "ok" && row.view) {
+					value = row.view.percentRemaining + "% · " + fmtCountdown(row.view.resetAt, props.nowMs);
+				}
+				return React.createElement("div", {
+					className: "dsh-provider-row state-" + state + (props.open ? " is-open" : ""),
+					role: "button",
+					tabIndex: 0,
+					"aria-expanded": props.open ? "true" : "false",
+					title: row.error || undefined,
+					onClick: props.onToggle,
+					onKeyDown: function (event) {
+						if (event.key === "Enter" || event.key === " ") {
+							event.preventDefault();
+							props.onToggle();
+						}
+					}
+				},
+					React.createElement("span", { className: "dsh-status-dot" }),
+					React.createElement("span", { className: "dsh-provider-name" }, row.label),
+					React.createElement("span", { className: "dsh-provider-value" }, value));
+			}
+
+			function ExtraQuotaDetail(props) {
+				var row = props.row;
+				var children = [];
+				if (row.status === "ok" && row.view) {
+					var view = row.view;
+					var state = usageState(view.percentRemaining, view.criticalPercent, view.warnPercent);
+					children.push(React.createElement("div", { key: "used", className: "dsh-detail-line" },
+						tplReplace(props.t("usedOfLimit"), { used: money(view.used, view.unit), limit: money(view.limit, view.unit) })));
+					children.push(React.createElement("div", { key: "remaining", className: "dsh-detail-line" },
+						tplReplace(props.t("remainingAmount"), { remaining: money(view.remaining, view.unit) })));
+					children.push(React.createElement("div", { key: "progress", className: "dsh-progress" },
+						React.createElement("div", { className: "dsh-progress-fill state-" + state, style: { width: view.percentRemaining + "%" } })));
+					children.push(React.createElement("div", { key: "reset", className: "dsh-window-caption" },
+						tplReplace(props.t("resetAt"), { when: fmtResetClock(view.resetAt) }) + " · "
+						+ tplReplace(props.t("resetIn"), { span: fmtCountdown(view.resetAt, props.nowMs) })));
+				} else {
+					children.push(React.createElement("div", { key: "status", className: "dsh-detail-line" }, row.error || props.t("usageUnavailable")));
+				}
+				children.push(React.createElement(DetailFoot, {
+					key: "foot",
+					t: props.t,
+					fetchedAt: row.fetchedAt,
+					refreshing: row.refreshing,
+					onRefresh: row.onRefresh
+				}));
+				return React.createElement("div", { className: "dsh-detail" }, children);
 			}
 
 			function ProviderDetail(props) {
@@ -896,8 +1023,15 @@
 			}
 
 			ctx.slots.inject("shell.overlay", () => ctx.slots.register(
-				{ name: "shell.overlay", id: "dsh-quota-status", order: 120, label: () => t("title"), locale: NS },
-				(props: any) => React.createElement(QuotaStatus, { t: props.t })
+				{
+					name: "shell.overlay",
+					id: "dsh-quota-status",
+					order: 120,
+					label: () => t("title"),
+					locale: NS,
+					children: { [EXTRA_ROW_SLOT]: { kind: "list", scope: "root" } }
+				},
+				(props: any) => React.createElement(QuotaStatus, { t: props.t, renderSlot: props.renderSlot })
 			));
 
 			// Add one custom card to the shipped Plugin Configuration tab. Its

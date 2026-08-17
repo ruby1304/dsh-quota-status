@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { ProxyAgent, type Dispatcher } from 'undici'
 import type { ProviderKind } from './config.js'
 
 /** Monetary balance view (DeepSeek). */
@@ -371,8 +372,9 @@ export async function queryCodexUsage(
   auth: CodexAuth,
   timeoutMs: number,
   fetchImpl: FetchJson = fetch,
+  proxyUrl = '',
 ): Promise<UsageView> {
-  const response = await fetchImpl(endpoint, {
+  const request = async (dispatcher?: Dispatcher): Promise<Response> => fetchImpl(endpoint, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${auth.accessToken}`,
@@ -380,7 +382,22 @@ export async function queryCodexUsage(
       Accept: 'application/json',
     },
     signal: AbortSignal.timeout(timeoutMs),
-  })
+    ...(dispatcher === undefined ? {} : { dispatcher }),
+  } as RequestInit)
+
+  let response: Response
+  if (proxyUrl.trim().length > 0) {
+    const agent = new ProxyAgent(proxyUrl.trim())
+    try {
+      response = await request(agent)
+    } catch {
+      response = await request()
+    } finally {
+      await agent.close()
+    }
+  } else {
+    response = await request()
+  }
   if (!response.ok) {
     throw new Error(`provider http ${response.status}`)
   }

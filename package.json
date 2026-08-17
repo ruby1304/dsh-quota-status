@@ -21,6 +21,14 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruby1304/dsh-quota-status.git"
+  },
+  "homepage": "https://github.com/ruby1304/dsh-quota-status",
+  "bugs": {
+    "url": "https://github.com/ruby1304/dsh-quota-status/issues"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"

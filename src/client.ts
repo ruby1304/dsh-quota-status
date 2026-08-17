@@ -228,6 +228,16 @@
 			return Math.max(1, m) + "m";
 		}
 
+		/** LEVEL_ADVANCED → Advanced (raw enum falls through unchanged). */
+		function prettyLevel(level) {
+			var s = String(level);
+			if (s.indexOf("LEVEL_") === 0) {
+				s = s.slice(6).toLowerCase();
+				return s.charAt(0).toUpperCase() + s.slice(1);
+			}
+			return s;
+		}
+
 		function money(amount, currency) {
 			if (!Number.isFinite(amount)) return "—";
 			var symbol = currency === "USD" ? "$" : currency === "CNY" ? "¥" : "";
@@ -326,7 +336,7 @@
 					kind: spec.kind,
 					status: worst ? worst.status : "loading",
 					value: "",
-					sub: u.membership ? tplReplace(t("membership"), { level: u.membership }) : "",
+					sub: u.membership ? tplReplace(t("membership"), { level: prettyLevel(u.membership) }) : "",
 					windows: windows,
 					title: ""
 				};

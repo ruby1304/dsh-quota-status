@@ -1,8 +1,15 @@
 # dsh-quota-status
 
+[![npm](https://img.shields.io/npm/v/dsh-quota-status)](https://www.npmjs.com/package/dsh-quota-status)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 > DeepSeek Harness (DSH) web 插件：在一个极简卡片里实时查看 **DeepSeek API 余额** 和 **Kimi For Coding 套餐余量**（周限 + 5 小时窗口），带剩余量、进度条、重置倒计时和 DeepSeek 波峰/波谷电价提醒。
 >
 > A DeepSeek Harness (DSH) web plugin: one minimal card for the **DeepSeek API balance** and the **Kimi For Coding plan quota** (weekly + 5h windows) — remaining amounts, progress bars, reset countdowns, and a DeepSeek peak/off-peak pricing reminder.
+
+![收起 / Collapsed](docs/images/card-collapsed.png)
+
+![展开 / Expanded](docs/images/card-expanded.png)
 
 ## 功能 / Features
 

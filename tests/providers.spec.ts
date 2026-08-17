@@ -123,31 +123,36 @@ describe('windowKeyOf', () => {
 })
 
 describe('deepSeekPeakInfo', () => {
-  // Off-peak window: 00:30–08:30 Beijing time = 16:30–00:30 UTC.
-  it('flags the exact off-peak start (00:30 Beijing)', () => {
-    expect(deepSeekPeakInfo(Date.parse('2026-08-17T16:30:00Z')))
-      .toEqual({ offPeak: true, minutesLeft: 480 })
+  // Peak windows (effective 2026-08-17): 01:00–04:00 & 06:00–10:00 UTC
+  // = 09:00–12:00 & 14:00–18:00 Beijing; all other hours are off-peak.
+  it('flags the exact morning peak start (09:00 Beijing)', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T01:00:00Z')))
+      .toEqual({ offPeak: false, minutesLeft: 180 })
   })
 
-  it('stays peak one minute before the window', () => {
-    expect(deepSeekPeakInfo(Date.parse('2026-08-17T16:29:00Z')))
-      .toEqual({ offPeak: false, minutesLeft: 1 })
-  })
-
-  it('ends off-peak at 08:30 Beijing sharp', () => {
-    expect(deepSeekPeakInfo(Date.parse('2026-08-17T00:29:00Z')))
+  it('stays off-peak one minute before the morning peak', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T00:59:00Z')))
       .toEqual({ offPeak: true, minutesLeft: 1 })
-    expect(deepSeekPeakInfo(Date.parse('2026-08-17T00:30:00Z')))
-      .toEqual({ offPeak: false, minutesLeft: 960 })
   })
 
-  it('counts down to the next window across midnight', () => {
-    // 20:00 Beijing = 12:00 UTC → 4h30m until 00:30.
-    expect(deepSeekPeakInfo(Date.parse('2026-08-17T12:00:00Z')))
-      .toEqual({ offPeak: false, minutesLeft: 270 })
-    // 04:00 Beijing = 20:00 UTC (previous day) → 4h30m left of off-peak.
-    expect(deepSeekPeakInfo(Date.parse('2026-08-16T20:00:00Z')))
-      .toEqual({ offPeak: true, minutesLeft: 270 })
+  it('treats the 12:00–14:00 midday window as off-peak', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T04:00:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 120 })
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T05:30:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 30 })
+  })
+
+  it('flags the afternoon peak (14:00–18:00 Beijing)', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T06:00:00Z')))
+      .toEqual({ offPeak: false, minutesLeft: 240 })
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T10:00:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 900 })
+  })
+
+  it('counts down to the morning peak across midnight', () => {
+    // 00:30 Beijing = 16:30 UTC (previous day) → 8h30m until 09:00.
+    expect(deepSeekPeakInfo(Date.parse('2026-08-16T16:30:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 510 })
   })
 })
 

@@ -7,8 +7,8 @@
  * (DeepSeek topped-up/granted split + peak/off-peak pricing reminder,
  * Kimi per-window progress bars with live reset countdowns, updated-at
  * line with a refresh action). DeepSeek rows carry a peak/off-peak pill
- * driven by wall-clock time (00:30–08:30 Beijing daily: chat 50% off,
- * reasoner 75% off). All strings are localized zh/en through the host
+ * driven by wall-clock time (peak: 09:00–12:00 & 14:00–18:00 Beijing
+ * daily, all other hours off-peak at half price). All strings are localized zh/en through the host
  * locale service; all provider data arrives over the loopback Connection
  * RPC channel `/dsh-quota-status`; API keys never reach the browser.
  *
@@ -50,7 +50,7 @@
 				membership: "套餐 {level}",
 				offPeak: "低谷",
 				peak: "高峰",
-				peakDesc: "低谷时段 00:30–08:30（北京时间）· chat 5 折 · reasoner 2.5 折",
+				peakDesc: "高峰 09:00–12:00、14:00–18:00（北京时间）· 其余时段低谷半价",
 				offPeakNow: "正在低谷 · {span} 后结束",
 				peakNow: "正在高峰 · {span} 后进入低谷",
 			},
@@ -74,7 +74,7 @@
 				membership: "Plan {level}",
 				offPeak: "Off-peak",
 				peak: "Peak",
-				peakDesc: "Off-peak 00:30–08:30 (UTC+8) · chat 50% off · reasoner 75% off",
+				peakDesc: "Peak 09:00–12:00 & 14:00–18:00 (UTC+8) · off-peak half price",
 				offPeakNow: "Off-peak · ends in {span}",
 				peakNow: "Peak · off-peak in {span}",
 			}
@@ -228,14 +228,22 @@
 		 * DeepSeek peak/off-peak pricing, pure wall-clock math. Mirrors
 		 * deepSeekPeakInfo in src/providers.ts — this bundle is standalone
 		 * and cannot import from the host module, so keep both in sync.
-		 * Off-peak window: 00:30–08:30 Beijing time (16:30–00:30 UTC) daily.
+		 * Peak windows (effective 2026-08-17): 09:00–12:00 and 14:00–18:00
+		 * Beijing time; all other hours are off-peak at half the peak rate.
 		 */
 		function peakInfo(nowMs) {
 			var d = new Date(nowMs);
 			var minutes = (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % 1440;
-			var offPeak = minutes >= 30 && minutes < 8 * 60 + 30;
-			var target = offPeak ? 8 * 60 + 30 : 30;
-			return { offPeak: offPeak, minutesLeft: (target - minutes + 1440) % 1440 };
+			var peak = (minutes >= 540 && minutes < 720) || (minutes >= 840 && minutes < 1080);
+			var boundaries = [540, 720, 840, 1080];
+			var next = -1;
+			for (var i = 0; i < boundaries.length; i++) {
+				if (boundaries[i] > minutes) { next = boundaries[i]; break; }
+			}
+			return {
+				offPeak: !peak,
+				minutesLeft: next === -1 ? boundaries[0] + 1440 - minutes : next - minutes
+			};
 		}
 
 		function balanceState(amount, critical, warn) {

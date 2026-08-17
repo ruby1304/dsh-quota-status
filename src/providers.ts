@@ -202,25 +202,32 @@ export function parseDeepSeekBalance(payload: unknown): BalanceView {
 
 /** DeepSeek peak/off-peak pricing state at one instant. */
 export interface PeakInfo {
-  /** True inside the daily off-peak window (00:30–08:30 Beijing time). */
+  /** True outside the two daily peak windows (see deepSeekPeakInfo). */
   offPeak: boolean
   /** Minutes until the next peak ↔ off-peak transition. */
   minutesLeft: number
 }
 
 /**
- * DeepSeek off-peak (波谷) pricing window: every day 00:30–08:30 Beijing
- * time (16:30–00:30 UTC). Inside the window deepseek-chat is 50% off and
- * deepseek-reasoner 75% off. Pure wall-clock math — no network, no locale
- * dependence. The client bundle mirrors these few lines (it cannot import
- * from this module), so keep the two copies in sync.
+ * DeepSeek peak/off-peak (峰谷) pricing, effective 2026-08-17 per
+ * https://api-docs.deepseek.com/quick_start/pricing : peak hours are
+ * 01:00–04:00 and 06:00–10:00 UTC = 09:00–12:00 and 14:00–18:00 Beijing
+ * time; all other hours (including the 12:00–14:00 midday valley and the
+ * overnight window) are off-peak at half the peak rate. Pure wall-clock
+ * math — no network, no locale dependence. The client bundle mirrors
+ * these few lines (it cannot import from this module), so keep the two
+ * copies in sync.
  */
 export function deepSeekPeakInfo(nowMs: number): PeakInfo {
   const d = new Date(nowMs)
   const minutes = (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % 1440
-  const offPeak = minutes >= 30 && minutes < 8 * 60 + 30
-  const target = offPeak ? 8 * 60 + 30 : 30
-  return { offPeak, minutesLeft: (target - minutes + 1440) % 1440 }
+  const peak = (minutes >= 540 && minutes < 720) || (minutes >= 840 && minutes < 1080)
+  const boundaries = [540, 720, 840, 1080]
+  const next = boundaries.find((b) => b > minutes)
+  return {
+    offPeak: !peak,
+    minutesLeft: next === undefined ? 540 + 1440 - minutes : next - minutes,
+  }
 }
 
 /** Adapter dispatch: one parsed view per provider kind. */

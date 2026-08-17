@@ -110,4 +110,10 @@ describe('row interaction source contract', () => {
     expect(source).toContain('children: { [EXTRA_ROW_SLOT]: { kind: "list", scope: "root" } }')
     expect(source).toContain('props.renderSlot(EXTRA_ROW_SLOT, { renderRow: renderExtraRow })')
   })
+
+  it('reserves a bottom safe area on narrow screens', () => {
+    expect(source).toContain('@media(max-width:720px){#dsh-quota-status{bottom:66px}}')
+    expect(source).toContain('var MOBILE_BOTTOM_MARGIN = 60')
+    expect(functionSource('clampPos')).toContain('globalThis.innerHeight - bottomMargin')
+  })
 })

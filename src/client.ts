@@ -177,6 +177,7 @@
 			"#dsh-quota-card .dsh-detail-refresh:disabled{cursor:default;opacity:.55}",
 			"#dsh-quota-card .dsh-detail-refresh.is-loading{animation:dsh-quota-spin .7s linear infinite}",
 			"@keyframes dsh-quota-spin{to{transform:rotate(360deg)}}",
+			"@media(max-width:720px){#dsh-quota-status{bottom:66px}}",
 			".dsh-quota-settings{list-style:none;overflow:hidden;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);color:var(--dsw-alias-label-primary,#1b1b1c);font-family:var(--dsw-font-family,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif)}",
 			".dsh-quota-settings .qs-header{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;background:transparent;text-align:left;cursor:pointer;color:inherit;font:inherit}",
 			".dsh-quota-settings .qs-header:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.035))}",
@@ -213,6 +214,13 @@
 
 		var ROOT_EDGE = 16;
 		var SCREEN_MARGIN = 10;
+		var MOBILE_BREAKPOINT = 720;
+		var MOBILE_BOTTOM_EDGE = 66;
+		var MOBILE_BOTTOM_MARGIN = 60;
+
+		function quotaBottomEdge() {
+			return globalThis.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_BOTTOM_EDGE : ROOT_EDGE;
+		}
 
 		function defaultPos() {
 			return { dx: 0, dy: 0 };
@@ -243,12 +251,14 @@
 		 * so clamping is a pure box calculation against the viewport.
 		 */
 		function clampPos(pos, width, height) {
+			var bottomEdge = quotaBottomEdge();
+			var bottomMargin = globalThis.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_BOTTOM_MARGIN : SCREEN_MARGIN;
 			var baseLeft = Math.max(ROOT_EDGE, globalThis.innerWidth - width - ROOT_EDGE);
-			var baseTop = Math.max(ROOT_EDGE, globalThis.innerHeight - height - ROOT_EDGE);
+			var baseTop = Math.max(ROOT_EDGE, globalThis.innerHeight - height - bottomEdge);
 			var minDx = SCREEN_MARGIN - baseLeft;
 			var maxDx = (globalThis.innerWidth - SCREEN_MARGIN) - (baseLeft + width);
 			var minDy = SCREEN_MARGIN - baseTop;
-			var maxDy = (globalThis.innerHeight - SCREEN_MARGIN) - (baseTop + height);
+			var maxDy = (globalThis.innerHeight - bottomMargin) - (baseTop + height);
 			return {
 				dx: Math.min(Math.max(pos.dx, minDx), Math.max(minDx, maxDx)),
 				dy: Math.min(Math.max(pos.dy, minDy), Math.max(minDy, maxDy))

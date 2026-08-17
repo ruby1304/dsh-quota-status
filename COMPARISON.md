@@ -1,5 +1,12 @@
 # dsh-quota-status vs dsh-plugin-llm-balance
 
+> **Status 2026-08-17:** resolved — the `web` profile now runs
+> `dsh-quota-status` 0.2.0 only (`dsh-plugin-llm-balance` was removed).
+> 0.2.0 adopted the minimal chrome-free card style, added the DeepSeek
+> peak/off-peak pricing pill, and moved all display preferences to the
+> profile YAML. The notes below describe the original 0.1.0 vs 0.2.1
+> comparison and are kept for reference.
+
 Both plugins were installed side-by-side into the same throwaway `web`
 profile and smoke-tested against the real credentials on 2026-08-15.
 

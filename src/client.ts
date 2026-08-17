@@ -2,12 +2,18 @@
  * dsh-quota-status — client half (browser bundle, served at
  * /plugins/dsh-quota-status/client.js through the `dsh.client` manifest).
  *
- * Registers one `shell.overlay` slot entry: a collapsed capsule at the
- * bottom-right corner (`DeepSeek ¥114.50 · Kimi 周 84%`) expanding into a
- * card with per-window progress bars and live reset countdowns. Settings
- * (visibility / refresh interval / warn thresholds) are local to the
- * browser. All provider data arrives over the loopback Connection RPC
- * channel `/dsh-quota-status`; API keys never reach the browser.
+ * One minimal `shell.overlay` card anchored bottom-right: one row per
+ * account (status dot + name + value), click a row to expand its detail
+ * (DeepSeek topped-up/granted split + peak/off-peak pricing reminder,
+ * Kimi per-window progress bars with live reset countdowns, updated-at
+ * line with a refresh action). DeepSeek rows carry a peak/off-peak pill
+ * driven by wall-clock time (00:30–08:30 Beijing daily: chat 50% off,
+ * reasoner 75% off). All strings are localized zh/en through the host
+ * locale service; all provider data arrives over the loopback Connection
+ * RPC channel `/dsh-quota-status`; API keys never reach the browser.
+ *
+ * Display preferences (rows, thresholds, refresh interval) live in the
+ * profile YAML config — the widget itself stays chrome-free on purpose.
  */
 (window as any).__ModuleLoader__.load({
 	id: "dsh-quota-status",
@@ -19,89 +25,66 @@
 		var React = require("react");
 
 		var CHANNEL = "/dsh-quota-status";
-		var STORAGE_KEY = "dsh-quota-status:settings";
+		var POS_STORAGE_KEY = "dsh-quota-status:pos";
+		var LEGACY_SETTINGS_KEY = "dsh-quota-status:settings";
 		var NS = "quota-status";
 
 		var DICT = {
 			zh: {
 				title: "配额余量",
-				expand: "展开配额余量",
-				collapse: "收起配额余量",
 				refresh: "刷新配额余量",
-				openSettings: "打开设置",
-				closeSettings: "关闭设置",
 				loading: "加载中…",
 				fetchFailed: "查询失败",
 				missingKey: "未配置 {ref}",
 				balanceUnavailable: "暂时无法获取余额",
 				usageUnavailable: "暂时无法获取用量",
-				allHidden: "已全部隐藏",
-				emptyHint: "所有账户均已隐藏，可在设置中开启",
+				emptyHint: "暂无配置的账户",
 				updatedAt: "更新于 {time}",
 				notAvailable: "当前不可用",
 				balanceSub: "充值 {topped} · 赠送 {granted}",
 				weekly: "周限",
 				weeklyShort: "周",
-				rolling5h: "5 小时",
 				remaining: "剩余 {remaining}/{limit}",
 				resetAt: "{when} 重置",
 				resetIn: "还有 {span}",
 				membership: "套餐 {level}",
-				settingsTitle: "显示设置",
-				settingsInterval: "刷新间隔",
-				settingsThresholds: "预警阈值",
-				settingsBalanceWarn: "余额预警（¥）",
-				settingsUsageWarn: "余量预警（%）",
-				settingsReset: "恢复默认",
-				resetPosition: "恢复位置",
-				localOnly: "设置仅保存在本浏览器",
-				secondsSuffix: "{n} 秒",
-				minutesSuffix: "{n} 分钟",
+				offPeak: "低谷",
+				peak: "高峰",
+				peakDesc: "低谷时段 00:30–08:30（北京时间）· chat 5 折 · reasoner 2.5 折",
+				offPeakNow: "正在低谷 · {span} 后结束",
+				peakNow: "正在高峰 · {span} 后进入低谷",
 			},
 			en: {
 				title: "Quota",
-				expand: "Expand quota",
-				collapse: "Collapse quota",
 				refresh: "Refresh quota",
-				openSettings: "Open settings",
-				closeSettings: "Close settings",
 				loading: "Loading…",
 				fetchFailed: "Query failed",
 				missingKey: "{ref} not configured",
 				balanceUnavailable: "Balance unavailable",
 				usageUnavailable: "Usage unavailable",
-				allHidden: "all hidden",
-				emptyHint: "All accounts are hidden — re-enable them in settings",
+				emptyHint: "No accounts configured",
 				updatedAt: "Updated {time}",
 				notAvailable: "Unavailable",
 				balanceSub: "Topped-up {topped} · Granted {granted}",
 				weekly: "Weekly",
 				weeklyShort: "Wk",
-				rolling5h: "5h",
 				remaining: "{remaining}/{limit} left",
 				resetAt: "resets {when}",
 				resetIn: "{span} left",
 				membership: "Plan {level}",
-				settingsTitle: "Display settings",
-				settingsInterval: "Refresh interval",
-				settingsThresholds: "Warn thresholds",
-				settingsBalanceWarn: "Balance warn",
-				settingsUsageWarn: "Quota warn (%)",
-				settingsReset: "Reset defaults",
-				resetPosition: "Reset position",
-				localOnly: "Stored in this browser only",
-				secondsSuffix: "{n}s",
-				minutesSuffix: "{n} min",
+				offPeak: "Off-peak",
+				peak: "Peak",
+				peakDesc: "Off-peak 00:30–08:30 (UTC+8) · chat 50% off · reasoner 75% off",
+				offPeakNow: "Off-peak · ends in {span}",
+				peakNow: "Peak · off-peak in {span}",
 			}
 		};
-
-		var REFRESH_CHOICES = [15000, 30000, 60000, 120000, 300000];
 
 		var CSS = [
 			"#dsh-quota-status{position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;align-items:flex-end;pointer-events:auto;color:var(--dsw-alias-label-primary,#1b1b1c);font-family:var(--dsw-font-family,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif);font-size:12px;line-height:1.45;user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab}",
 			"#dsh-quota-status.is-dragging{cursor:grabbing}",
 			"#dsh-quota-status.is-dragging #dsh-quota-card{box-shadow:0 6px 20px rgba(0,0,0,.16);transition:none}",
-			"#dsh-quota-card{min-width:180px;max-width:300px;padding:6px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:0 2px 12px rgba(0,0,0,.08);cursor:grab;box-sizing:border-box;transition:box-shadow .15s ease}",
+			"#dsh-quota-card{min-width:190px;max-width:320px;padding:6px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:0 2px 12px rgba(0,0,0,.08);box-sizing:border-box;transition:box-shadow .15s ease}",
 			"#dsh-quota-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}",
 			"#dsh-quota-card .dsh-provider-row{display:flex;align-items:center;gap:8px;padding:3px 8px;border-radius:8px;white-space:nowrap;cursor:pointer;transition:background-color .12s ease,box-shadow .12s ease}",
 			"#dsh-quota-card .dsh-provider-row:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
@@ -117,40 +100,32 @@
 			"#dsh-quota-card .dsh-provider-value .dsh-value-label{font-weight:500;color:var(--dsw-alias-label-secondary,#61666b);margin-right:2px}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-warn{color:var(--dsw-static-amber-500,#f59e0b)}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-error{color:var(--dsw-static-red-500,#ef4444)}",
-			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-loading{color:var(--dsw-alias-label-secondary,#61666b)}",
+			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-loading{color:var(--dsw-alias-label-secondary,#61666b);font-weight:400}",
+			"#dsh-quota-card .dsh-peak-pill{flex:none;display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;letter-spacing:.01em;font-variant-numeric:tabular-nums}",
+			"#dsh-quota-card .dsh-peak-pill.is-offpeak{color:var(--dsw-static-green-500,#10b981);background:rgba(16,185,129,.14)}",
+			"#dsh-quota-card .dsh-peak-pill.is-peak{color:var(--dsw-alias-label-tertiary,#818590);background:var(--dsw-alias-bg-overlay,rgba(0,0,0,.05))}",
 			"#dsh-quota-card .dsh-row-chevron{flex:none;color:var(--dsw-alias-label-tertiary,#818590);font-size:9px;line-height:1;margin-left:2px}",
 			"#dsh-quota-card .dsh-quota-error{padding:4px 8px;color:var(--dsw-static-red-500,#ef4444);font-size:12px;line-height:18px;word-break:break-all}",
 			"#dsh-quota-card .dsh-provider-sub{padding:4px 8px;color:var(--dsw-alias-label-secondary,#61666b);font-size:12px;line-height:18px}",
 			"#dsh-quota-card .dsh-detail{margin:1px 6px 4px;padding:6px 8px;border-radius:8px;background:var(--dsw-alias-bg-overlay,#ebeef2);box-shadow:0 1px 3px rgba(15,17,21,.06);font-size:12px}",
-			"#dsh-quota-card .dsh-detail-line{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px;line-height:18px}",
+			"#dsh-quota-card .dsh-detail-line{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px;line-height:18px;white-space:normal}",
+			"#dsh-quota-card .dsh-detail-line.dsh-peak-now{font-variant-numeric:tabular-nums}",
 			"#dsh-quota-card .dsh-window{margin-top:7px}",
 			"#dsh-quota-card .dsh-window:first-child{margin-top:0}",
 			"#dsh-quota-card .dsh-window-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--dsw-alias-label-secondary,#61666b);font-size:12px;line-height:17px}",
 			"#dsh-quota-card .dsh-window-value{font-variant-numeric:tabular-nums;font-weight:600}",
-			"#dsh-quota-card .dsh-progress{position:relative;width:100%;height:4px;margin-top:4px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-bg-overlay,#f0f1f3)}",
+			"#dsh-quota-card .dsh-progress{position:relative;width:100%;height:4px;margin-top:4px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-bg-layer-2,#f0f1f3)}",
 			"#dsh-quota-card .dsh-progress-fill{height:100%;width:0;border-radius:inherit;background:var(--dsw-static-green-500,#22c55e);transition:width 300ms ease,background-color 160ms ease}",
 			"#dsh-quota-card .state-warn .dsh-progress-fill{background:var(--dsw-static-amber-500,#f59e0b)}",
 			"#dsh-quota-card .state-error .dsh-progress-fill{background:var(--dsw-static-red-500,#ef4444)}",
 			"#dsh-quota-card .dsh-window-caption{margin-top:4px;color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
-			"#dsh-quota-card .dsh-quota-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;padding:4px 8px 2px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}",
-			"#dsh-quota-card .dsh-footer-time{color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
-			"#dsh-quota-card .dsh-footer-actions{display:flex;gap:2px;margin:-2px -2px -2px 0}",
-			"#dsh-quota-card .dsh-footer-icon{display:inline-grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:7px;color:var(--dsw-alias-label-secondary,#61666b);background:transparent;font-size:13px;line-height:1;cursor:pointer;transition:background-color .12s ease,color .12s ease}",
-			"#dsh-quota-card .dsh-footer-icon:hover{color:var(--dsw-alias-label-primary,#1b1b1c);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
-			"#dsh-quota-card .dsh-footer-icon:disabled{cursor:default;opacity:.55}",
-			"#dsh-quota-card .dsh-footer-icon.is-loading{animation:dsh-quota-spin .7s linear infinite}",
-			"#dsh-quota-card .dsh-footer-icon.is-active{color:var(--dsw-static-deepseek-500,#4176e6);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
-			"@keyframes dsh-quota-spin{to{transform:rotate(360deg)}}",
-			"#dsh-quota-status > .dsh-settings{position:absolute;right:0;bottom:100%;margin-bottom:6px;width:300px;max-height:calc(100vh - 120px);overflow:auto;padding:10px 12px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:0 8px 24px rgba(15,17,21,.14),0 2px 6px rgba(15,17,21,.08);box-sizing:border-box;z-index:1}",
-			"#dsh-quota-card .dsh-setting-title{margin-bottom:6px;color:var(--dsw-alias-label-primary,#1b1b1c);font-size:12px;font-weight:600;line-height:18px}",
-			"#dsh-quota-card .dsh-setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;color:var(--dsw-alias-label-primary,#1b1b1c);font-size:12px;line-height:18px}",
-			"#dsh-quota-card .dsh-setting-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-			"#dsh-quota-card .dsh-setting-input,#dsh-quota-card .dsh-setting-select{width:104px;padding:3px 8px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.14));border-radius:8px;background:var(--dsw-alias-bg-layer-1,#fff);color:var(--dsw-alias-label-primary,#1b1b1c);font:inherit;font-size:12px;line-height:18px;box-sizing:border-box}",
-			"#dsh-quota-card .dsh-setting-check{flex:none;accent-color:var(--dsw-static-deepseek-500,#4176e6)}",
-			"#dsh-quota-card .dsh-setting-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}",
-			"#dsh-quota-card .dsh-setting-hint{color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:16px}",
-			"#dsh-quota-card .dsh-setting-reset{padding:3px 10px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.14));border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary,#61666b);font:inherit;font-size:12px;line-height:18px;cursor:pointer;transition:color .12s ease,background-color .12s ease}",
-			"#dsh-quota-card .dsh-setting-reset:hover{color:var(--dsw-alias-label-primary,#1b1b1c);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}"
+			"#dsh-quota-card .dsh-detail-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:5px;border-top:1px solid var(--dsw-alias-border-l1,rgba(0,0,0,.06))}",
+			"#dsh-quota-card .dsh-detail-time{color:var(--dsw-alias-label-tertiary,#818590);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}",
+			"#dsh-quota-card .dsh-detail-refresh{display:inline-grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:6px;color:var(--dsw-alias-label-secondary,#61666b);background:transparent;font-size:12px;line-height:1;cursor:pointer;transition:background-color .12s ease,color .12s ease}",
+			"#dsh-quota-card .dsh-detail-refresh:hover{color:var(--dsw-alias-label-primary,#1b1b1c);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
+			"#dsh-quota-card .dsh-detail-refresh:disabled{cursor:default;opacity:.55}",
+			"#dsh-quota-card .dsh-detail-refresh.is-loading{animation:dsh-quota-spin .7s linear infinite}",
+			"@keyframes dsh-quota-spin{to{transform:rotate(360deg)}}"
 		].join("\n");
 
 		function tplReplace(template, params) {
@@ -159,29 +134,6 @@
 			});
 		}
 
-		function readSettings() {
-			var base = { hidden: {}, refreshMs: null, warnBalance: null, warnUsage: null };
-			try {
-				var raw = globalThis.localStorage.getItem(STORAGE_KEY);
-				if (raw === null) return base;
-				var parsed = JSON.parse(raw);
-				if (parsed && typeof parsed === "object") {
-					if (parsed.hidden && typeof parsed.hidden === "object") base.hidden = parsed.hidden;
-					if (typeof parsed.refreshMs === "number" && Number.isFinite(parsed.refreshMs) && parsed.refreshMs >= 5000) base.refreshMs = parsed.refreshMs;
-					if (typeof parsed.warnBalance === "number" && Number.isFinite(parsed.warnBalance) && parsed.warnBalance >= 0) base.warnBalance = parsed.warnBalance;
-					if (typeof parsed.warnUsage === "number" && Number.isFinite(parsed.warnUsage) && parsed.warnUsage >= 0 && parsed.warnUsage <= 100) base.warnUsage = parsed.warnUsage;
-				}
-			} catch (err) {}
-			return base;
-		}
-
-		function writeSettings(settings) {
-			try {
-				globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-			} catch (err) {}
-		}
-
-		var POS_STORAGE_KEY = "dsh-quota-status:pos";
 		var ROOT_EDGE = 16;
 		var SCREEN_MARGIN = 10;
 
@@ -198,7 +150,6 @@
 						&& typeof saved.dy === "number" && Number.isFinite(saved.dy)) {
 						return { dx: saved.dx, dy: saved.dy };
 					}
-					// Legacy left/top records are ignored; users just re-drag once.
 				}
 			} catch (err) {}
 			return defaultPos();
@@ -229,8 +180,7 @@
 
 		function isInteractiveTarget(target) {
 			if (!(target instanceof Element)) return false;
-			return target.closest("input,select,textarea,label,a") !== null
-				|| target.closest(".dsh-quota-icon,.dsh-setting-reset,.dsh-setting-check") !== null;
+			return target.closest("input,select,textarea,label,a,button") !== null;
 		}
 
 		function pad2(n) {
@@ -259,6 +209,14 @@
 			return secs + "s";
 		}
 
+		/** Minute-granularity span for the peak countdown: 7h30m / 45m. */
+		function fmtSpanMin(totalMin) {
+			var h = Math.floor(totalMin / 60);
+			var m = totalMin % 60;
+			if (h > 0) return m > 0 ? h + "h" + m + "m" : h + "h";
+			return Math.max(1, m) + "m";
+		}
+
 		function money(amount, currency) {
 			if (!Number.isFinite(amount)) return "—";
 			var symbol = currency === "USD" ? "$" : currency === "CNY" ? "¥" : "";
@@ -266,11 +224,18 @@
 			return symbol ? symbol + text : text + " " + currency;
 		}
 
-		/** Compact provider label for the collapsed capsule. */
-		function capsuleLabel(spec) {
-			if (spec.id === "kimi-coding") return "Kimi";
-			if (spec.id === "deepseek") return "DeepSeek";
-			return spec.label || spec.id;
+		/**
+		 * DeepSeek peak/off-peak pricing, pure wall-clock math. Mirrors
+		 * deepSeekPeakInfo in src/providers.ts — this bundle is standalone
+		 * and cannot import from the host module, so keep both in sync.
+		 * Off-peak window: 00:30–08:30 Beijing time (16:30–00:30 UTC) daily.
+		 */
+		function peakInfo(nowMs) {
+			var d = new Date(nowMs);
+			var minutes = (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % 1440;
+			var offPeak = minutes >= 30 && minutes < 8 * 60 + 30;
+			var target = offPeak ? 8 * 60 + 30 : 30;
+			return { offPeak: offPeak, minutesLeft: (target - minutes + 1440) % 1440 };
 		}
 
 		function balanceState(amount, critical, warn) {
@@ -287,38 +252,29 @@
 			return "ok";
 		}
 
-		/** Effective thresholds for one spec, local overrides win. */
-		function effectiveThresholds(spec, settings) {
-			var warnBalance = settings.warnBalance !== null ? settings.warnBalance : spec.warnBalance;
-			var criticalBalance = spec.criticalBalance;
-			var warnUsage = settings.warnUsage !== null ? settings.warnUsage : spec.warnUsagePercent;
-			var criticalUsage = spec.criticalUsagePercent;
-			return { warnBalance: warnBalance, criticalBalance: criticalBalance, warnUsage: warnUsage, criticalUsage: criticalUsage };
-		}
-
-		/** One row view model for capsule + card rendering. */
-		function rowView(t, spec, entry, settings, nowMs) {
-			var thresholds = effectiveThresholds(spec, settings);
+		/** One row view model for collapsed + detail rendering. */
+		function rowView(t, spec, entry) {
 			var ref = (entry && typeof entry.error === "string" && entry.error.length > 0) ? entry.error : (spec.credential || "KEY");
 			var missingText = tplReplace(t("missingKey"), { ref: ref });
-			if (!entry || entry.status === "missing") {
-				return { kind: spec.kind, status: "error", summary: "—", value: "—", sub: missingText, windows: [], title: missingText };
+			if (!entry) {
+				return { kind: spec.kind, status: "loading", value: "—", sub: t("loading"), windows: [], title: "" };
+			}
+			if (entry.status === "missing") {
+				return { kind: spec.kind, status: "error", value: "—", sub: missingText, windows: [], title: missingText };
 			}
 			if (entry.status === "error" || !entry.view) {
 				return {
-					kind: spec.kind, status: "error", summary: "—", value: "—",
+					kind: spec.kind, status: "error", value: "—",
 					sub: entry.kind === "balance" || spec.kind === "deepseek-balance" ? t("balanceUnavailable") : t("usageUnavailable"),
 					windows: [], title: entry.error || t("fetchFailed")
 				};
 			}
 			if (spec.kind === "deepseek-balance" && entry.view.kind === "balance") {
 				var v = entry.view;
-				var status = v.available === false ? "error" : balanceState(v.amount, thresholds.criticalBalance, thresholds.warnBalance);
+				var status = v.available === false ? "error" : balanceState(v.amount, spec.criticalBalance, spec.warnBalance);
 				return {
 					kind: spec.kind,
 					status: status,
-					summary: money(v.amount, v.currency),
-					capsule: money(v.amount, v.currency),
 					value: money(v.amount, v.currency),
 					sub: v.available === false
 						? t("notAvailable")
@@ -333,25 +289,20 @@
 				var worst = null;
 				for (var i = 0; i < u.windows.length; i++) {
 					var w = u.windows[i];
-					var wstatus = usageState(w.percentRemaining, thresholds.criticalUsage, thresholds.warnUsage);
+					var wstatus = usageState(w.percentRemaining, spec.criticalUsagePercent, spec.warnUsagePercent);
 					if (worst === null || w.percentRemaining < worst.window.percentRemaining) worst = { window: w, status: wstatus };
 					windows.push({ window: w, status: wstatus });
 				}
-				var label = worst ? (worst.window.key === "weekly" ? t("weekly") : worst.window.label) : "";
-				var shortLabel = worst ? (worst.window.key === "weekly" ? t("weeklyShort") : worst.window.label) : "";
-				var summary = worst ? label + " " + worst.window.percentRemaining + "%" : "—";
 				return {
 					kind: spec.kind,
 					status: worst ? worst.status : "loading",
-					summary: summary,
-					capsule: worst ? shortLabel + " " + worst.window.percentRemaining + "%" : "—",
 					value: "",
 					sub: u.membership ? tplReplace(t("membership"), { level: u.membership }) : "",
 					windows: windows,
 					title: ""
 				};
 			}
-			return { kind: spec.kind, status: "loading", summary: "—", value: "—", sub: "", windows: [], title: "" };
+			return { kind: spec.kind, status: "loading", value: "—", sub: "", windows: [], title: "" };
 		}
 
 		var inject = ["slots", "timer", "connection", "locale"];
@@ -369,6 +320,10 @@
 				return ctx.locale.register(NS, DICT);
 			}, "dsh-quota-status: copy dictionaries");
 
+			// The settings panel was removed in favor of YAML config; drop its
+			// legacy localStorage record so the browser stays as clean as the UI.
+			try { globalThis.localStorage.removeItem(LEGACY_SETTINGS_KEY); } catch (err) {}
+
 			var t = ctx.locale.bind(NS);
 
 			function QuotaStatus(props) {
@@ -383,10 +338,6 @@
 				var fetchedAt = atState[0], setFetchedAt = atState[1];
 				var refreshState = React.useState(false);
 				var refreshing = refreshState[0], setRefreshing = refreshState[1];
-				var settingsState = React.useState(readSettings);
-				var settings = settingsState[0];
-				var settingsOpenState = React.useState(false);
-				var settingsOpen = settingsOpenState[0], setSettingsOpen = settingsOpenState[1];
 				var openState = React.useState(null);
 				var openId = openState[0], setOpenId = openState[1];
 				var clockState = React.useState(Date.now);
@@ -401,11 +352,6 @@
 				var suppressClickRef = React.useRef(false);
 				posRef.current = pos;
 
-				var updateSettings = function (next) {
-					writeSettings(next);
-					settingsState[1](next);
-				};
-
 				function setPosStateSafe(next) {
 					posRef.current = next;
 					posState[1](next);
@@ -417,7 +363,7 @@
 					var rect = el.getBoundingClientRect();
 					if (rect.width <= 0 || rect.height <= 0) return;
 					setPosStateSafe(clampPos(posRef.current, rect.width, rect.height));
-				}, [openId, settingsOpen, dataById, specs]);
+				}, [openId, dataById, specs]);
 
 				var loadSpecs = function () {
 					return ctx.connection.rpc.call(CHANNEL, "specs", null).then(function (result) {
@@ -458,9 +404,7 @@
 					loadSpecs().then(load);
 				}, []);
 
-				var effectiveMs = settings.refreshMs !== null && settings.refreshMs !== undefined
-					? settings.refreshMs
-					: (specs ? specs.refreshMs : 60000);
+				var effectiveMs = specs ? specs.refreshMs : 60000;
 
 				React.useEffect(function () {
 					return ctx.interval(function () {
@@ -521,17 +465,10 @@
 					setOpenId(function (current) { return current === id ? null : id; });
 				}
 
-				var rows = [];
+				var rows = specs ? (specs.rows || []) : [];
 				var views = {};
-				if (specs) {
-					var specRows = specs.rows || [];
-					for (var si = 0; si < specRows.length; si++) {
-						if (settings.hidden[specRows[si].id]) continue;
-						rows.push(specRows[si]);
-					}
-					for (var vi = 0; vi < specRows.length; vi++) {
-						views[specRows[vi].id] = rowView(t, specRows[vi], dataById[specRows[vi].id], settings, nowMs);
-					}
+				for (var vi = 0; vi < rows.length; vi++) {
+					views[rows[vi].id] = rowView(t, rows[vi], dataById[rows[vi].id]);
 				}
 
 				var rowEls = [];
@@ -541,104 +478,32 @@
 					rowEls.push(React.createElement("div", { key: "empty", className: "dsh-provider-sub" }, t("emptyHint")));
 				} else {
 					for (var ri = 0; ri < rows.length; ri++) {
-						var row = rows[ri];
-						var rv = views[row.id];
-						var isOpen = openId === row.id;
-						rowEls.push(React.createElement(ProviderRow, {
-							key: row.id,
-							spec: row,
-							view: rv,
-							t: t,
-							nowMs: nowMs,
-							open: isOpen,
-							onToggle: function () { toggleOpen(row.id); }
-						}));
-						if (isOpen) {
-							rowEls.push(React.createElement(ProviderDetail, { key: row.id + "-detail", spec: row, view: rv, t: t, nowMs: nowMs }));
-						}
+						(function (row) {
+							var isOpen = openId === row.id;
+							rowEls.push(React.createElement(ProviderRow, {
+								key: row.id,
+								spec: row,
+								view: views[row.id],
+								t: t,
+								nowMs: nowMs,
+								open: isOpen,
+								onToggle: function () { toggleOpen(row.id); }
+							}));
+							if (isOpen) {
+								rowEls.push(React.createElement(ProviderDetail, {
+									key: row.id + "-detail",
+									spec: row,
+									view: views[row.id],
+									t: t,
+									nowMs: nowMs,
+									fetchedAt: fetchedAt,
+									refreshing: refreshing,
+									onRefresh: refreshAll
+								}));
+							}
+						})(rows[ri]);
 					}
 				}
-
-				var settingsEl = null;
-				if (settingsOpen) {
-					var choices = [];
-					for (var ci = 0; ci < REFRESH_CHOICES.length; ci++) {
-						var cv = REFRESH_CHOICES[ci];
-						choices.push(React.createElement("option", { key: cv, value: String(cv) }, cv >= 60000 ? tplReplace(t("minutesSuffix"), { n: cv / 60000 }) : tplReplace(t("secondsSuffix"), { n: cv / 1000 })));
-					}
-					var hiddenRows = [];
-					var specRows2 = specs ? (specs.rows || []) : [];
-					for (var hi = 0; hi < specRows2.length; hi++) {
-						(function (spec) {
-							hiddenRows.push(React.createElement("div", { key: spec.id, className: "dsh-setting-row" },
-								React.createElement("span", { className: "dsh-setting-name" }, spec.label),
-								React.createElement("input", {
-									className: "dsh-setting-check",
-									type: "checkbox",
-									checked: settings.hidden[spec.id] !== true,
-									onChange: function (e) {
-										var next = { hidden: Object.assign({}, settings.hidden) };
-										if (e.target.checked) delete next.hidden[spec.id];
-										else next.hidden[spec.id] = true;
-										updateSettings(Object.assign({}, settings, next));
-									}
-								})));
-						})(specRows2[hi]);
-					}
-					settingsEl = React.createElement("div", { className: "dsh-settings" },
-						React.createElement("div", { className: "dsh-setting-title" }, t("settingsTitle")),
-						React.createElement("div", { className: "dsh-setting-row" },
-							React.createElement("span", { className: "dsh-setting-name" }, t("settingsInterval")),
-							React.createElement("select", {
-								className: "dsh-setting-select",
-								value: String(effectiveMs),
-								onChange: function (e) { updateSettings(Object.assign({}, settings, { refreshMs: Number(e.target.value) })); }
-							}, choices)),
-						hiddenRows,
-						React.createElement("div", { className: "dsh-setting-row" },
-							React.createElement("span", { className: "dsh-setting-name" }, t("settingsBalanceWarn")),
-							React.createElement("input", {
-								className: "dsh-setting-input",
-								type: "number",
-								min: "0",
-								value: settings.warnBalance !== null ? settings.warnBalance : (specs ? specs.rows[0].warnBalance : 20),
-								onChange: function (e) { updateSettings(Object.assign({}, settings, { warnBalance: Number(e.target.value) })); }
-							})),
-						React.createElement("div", { className: "dsh-setting-row" },
-							React.createElement("span", { className: "dsh-setting-name" }, t("settingsUsageWarn")),
-							React.createElement("input", {
-								className: "dsh-setting-input",
-								type: "number",
-								min: "0",
-								max: "100",
-								value: settings.warnUsage !== null ? settings.warnUsage : (specs ? specs.rows[0].warnUsagePercent : 40),
-								onChange: function (e) { updateSettings(Object.assign({}, settings, { warnUsage: Number(e.target.value) })); }
-							})),
-						React.createElement("div", { className: "dsh-setting-actions" },
-							React.createElement("span", { className: "dsh-setting-hint" }, t("localOnly")),
-							React.createElement("span", { style: { display: "flex", gap: "6px" } },
-								React.createElement("button", { className: "dsh-setting-reset", type: "button", onClick: function () { var next = defaultPos(); setPosStateSafe(next); savePos(next); } }, t("resetPosition")),
-								React.createElement("button", { className: "dsh-setting-reset", type: "button", onClick: function () { updateSettings({ hidden: {}, refreshMs: null, warnBalance: null, warnUsage: null }); } }, t("settingsReset")))));
-				}
-
-				var footerEl = React.createElement("div", { className: "dsh-quota-footer" },
-					React.createElement("span", { className: "dsh-footer-time" },
-						fetchedAt !== null ? tplReplace(t("updatedAt"), { time: new Date(fetchedAt).toLocaleTimeString() }) : ""),
-					React.createElement("span", { className: "dsh-footer-actions" },
-						React.createElement("button", {
-							className: "dsh-footer-icon" + (refreshing ? " is-loading" : ""),
-							type: "button",
-							"aria-label": t("refresh"),
-							disabled: refreshing,
-							onClick: function () { refreshAll(); }
-						}, "↻"),
-						React.createElement("button", {
-							className: "dsh-footer-icon" + (settingsOpen ? " is-active" : ""),
-							type: "button",
-							"aria-label": settingsOpen ? t("closeSettings") : t("openSettings"),
-							"aria-expanded": settingsOpen ? "true" : "false",
-							onClick: function () { setSettingsOpen(!settingsOpen); }
-						}, "⚙")));
 
 				var rootProps = {
 					id: "dsh-quota-status",
@@ -655,10 +520,7 @@
 				};
 
 				return React.createElement("div", rootProps,
-					settingsEl,
-					React.createElement("div", { id: "dsh-quota-card" },
-						rowEls,
-						footerEl));
+					React.createElement("div", { id: "dsh-quota-card" }, rowEls));
 			}
 
 			function ProviderRow(props) {
@@ -678,12 +540,22 @@
 							win.percentRemaining + "%"));
 					}
 				} else {
-					valueChildren.push(React.createElement("span", { className: "dsh-value-seg " + stateClass }, view.value || view.summary || "—"));
+					valueChildren.push(React.createElement("span", { key: "main", className: "dsh-value-seg " + stateClass }, view.value || "—"));
+				}
+				if (spec.kind === "deepseek-balance") {
+					var pk = peakInfo(props.nowMs);
+					valueChildren.push(React.createElement("span", {
+						key: "peak",
+						className: "dsh-peak-pill " + (pk.offPeak ? "is-offpeak" : "is-peak"),
+						title: t("peakDesc")
+					}, (pk.offPeak ? "☾ " : "☀ ") + t(pk.offPeak ? "offPeak" : "peak")));
 				}
 				return React.createElement("div", {
 					className: "dsh-provider-row " + stateClass + (props.open ? " is-open" : ""),
 					role: "button",
 					tabIndex: 0,
+					"aria-expanded": props.open ? "true" : "false",
+					title: view.title || undefined,
 					onClick: props.onToggle,
 					onKeyDown: function (e) {
 						if (e.key === "Enter" || e.key === " ") {
@@ -698,15 +570,31 @@
 					React.createElement("span", { className: "dsh-row-chevron" }, props.open ? "▾" : "▴"));
 			}
 
+			function DetailFoot(props) {
+				return React.createElement("div", { className: "dsh-detail-foot" },
+					React.createElement("span", { className: "dsh-detail-time" },
+						props.fetchedAt !== null ? tplReplace(props.t("updatedAt"), { time: new Date(props.fetchedAt).toLocaleTimeString() }) : ""),
+					React.createElement("button", {
+						className: "dsh-detail-refresh" + (props.refreshing ? " is-loading" : ""),
+						type: "button",
+						"aria-label": props.t("refresh"),
+						title: props.t("refresh"),
+						disabled: props.refreshing,
+						onClick: function () { props.onRefresh(); }
+					}, "↻"));
+			}
+
 			function ProviderDetail(props) {
 				var t = props.t;
 				var view = props.view;
+				var children = [];
 				if (view.kind === "deepseek-balance") {
-					return React.createElement("div", { className: "dsh-detail" },
-						React.createElement("div", { className: "dsh-detail-line" }, view.sub || t("balanceUnavailable")));
-				}
-				if (view.kind === "kimi-usage") {
-					var children = [];
+					children.push(React.createElement("div", { key: "sub", className: "dsh-detail-line" }, view.sub || t("balanceUnavailable")));
+					var pk = peakInfo(props.nowMs);
+					children.push(React.createElement("div", { key: "peak-desc", className: "dsh-detail-line" }, t("peakDesc")));
+					children.push(React.createElement("div", { key: "peak-now", className: "dsh-detail-line dsh-peak-now" },
+						tplReplace(t(pk.offPeak ? "offPeakNow" : "peakNow"), { span: fmtSpanMin(pk.minutesLeft) })));
+				} else if (view.kind === "kimi-usage") {
 					for (var i = 0; i < view.windows.length; i++) {
 						var wv = view.windows[i];
 						var win = wv.window;
@@ -724,10 +612,21 @@
 								React.createElement("div", { className: "dsh-progress-fill " + wstate, style: { width: win.percentRemaining + "%" } })),
 							cap.length > 0 ? React.createElement("div", { className: "dsh-window-caption" }, cap.join(" · ")) : null));
 					}
-					return React.createElement("div", { className: "dsh-detail" }, children);
+					if (view.sub) {
+						children.push(React.createElement("div", { key: "sub", className: "dsh-detail-line" }, view.sub));
+					}
 				}
-				return null;
+				if (children.length === 0) return null;
+				children.push(React.createElement(DetailFoot, {
+					key: "foot",
+					t: t,
+					fetchedAt: props.fetchedAt,
+					refreshing: props.refreshing,
+					onRefresh: props.onRefresh
+				}));
+				return React.createElement("div", { className: "dsh-detail" }, children);
 			}
+
 			ctx.slots.inject("shell.overlay", () => ctx.slots.register(
 				{ name: "shell.overlay", id: "dsh-quota-status", order: 120, label: () => t("title"), locale: NS },
 				(props: any) => React.createElement(QuotaStatus, { t: props.t })

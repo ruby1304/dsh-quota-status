@@ -25,6 +25,7 @@ export interface Config extends ConfigInput {}
 export interface ProviderRow extends ProviderRowInput {}
 export const Config = ConfigSchema
 export {
+  deepSeekPeakInfo,
   parseDeepSeekBalance,
   parseKimiUsage,
   parseProviderView,
@@ -33,6 +34,7 @@ export {
 } from './providers.js'
 export type {
   BalanceView,
+  PeakInfo,
   UsageView,
   UsageWindow,
   ProviderView,

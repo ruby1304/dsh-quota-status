@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deepSeekPeakInfo,
   parseDeepSeekBalance,
   parseKimiUsage,
   queryProvider,
@@ -118,6 +119,35 @@ describe('windowKeyOf', () => {
   it('rejects unknown shapes', () => {
     expect(windowKeyOf(undefined)).toBeUndefined()
     expect(windowKeyOf({ duration: 0, timeUnit: 'TIME_UNIT_MINUTE' })).toBeUndefined()
+  })
+})
+
+describe('deepSeekPeakInfo', () => {
+  // Off-peak window: 00:30–08:30 Beijing time = 16:30–00:30 UTC.
+  it('flags the exact off-peak start (00:30 Beijing)', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T16:30:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 480 })
+  })
+
+  it('stays peak one minute before the window', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T16:29:00Z')))
+      .toEqual({ offPeak: false, minutesLeft: 1 })
+  })
+
+  it('ends off-peak at 08:30 Beijing sharp', () => {
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T00:29:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 1 })
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T00:30:00Z')))
+      .toEqual({ offPeak: false, minutesLeft: 960 })
+  })
+
+  it('counts down to the next window across midnight', () => {
+    // 20:00 Beijing = 12:00 UTC → 4h30m until 00:30.
+    expect(deepSeekPeakInfo(Date.parse('2026-08-17T12:00:00Z')))
+      .toEqual({ offPeak: false, minutesLeft: 270 })
+    // 04:00 Beijing = 20:00 UTC (previous day) → 4h30m left of off-peak.
+    expect(deepSeekPeakInfo(Date.parse('2026-08-16T20:00:00Z')))
+      .toEqual({ offPeak: true, minutesLeft: 270 })
   })
 })
 

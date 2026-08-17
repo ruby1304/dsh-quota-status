@@ -1,19 +1,20 @@
 # dsh-quota-status
 
-> DeepSeek Harness (DSH) web 插件：在一个紧凑卡片里实时查看 **DeepSeek API 余额** 和 **Kimi For Coding 套餐余量**（周限 + 5 小时窗口），带剩余量、进度条、重置时间与实时倒计时。
+> DeepSeek Harness (DSH) web 插件：在一个极简卡片里实时查看 **DeepSeek API 余额** 和 **Kimi For Coding 套餐余量**（周限 + 5 小时窗口），带剩余量、进度条、重置倒计时和 DeepSeek 波峰/波谷电价提醒。
 >
-> A DeepSeek Harness (DSH) web plugin: one compact card for the **DeepSeek API balance** and the **Kimi For Coding plan quota** (weekly + 5h windows) — remaining amounts, progress bars, reset times and live countdowns.
+> A DeepSeek Harness (DSH) web plugin: one minimal card for the **DeepSeek API balance** and the **Kimi For Coding plan quota** (weekly + 5h windows) — remaining amounts, progress bars, reset countdowns, and a DeepSeek peak/off-peak pricing reminder.
 
 ## 功能 / Features
 
 - 开箱即用：默认读取 `DEEPSEEK_API_KEY` 与 `KIMI_CODING_API_KEY`（经 dsh credentials seam，密钥永不进入浏览器）。
-- 路径 1 风格的小卡片：每个账户一行（`DeepSeek ¥113.59`、`Kimi 5h 100% · Wk 84%`），宽度随内容自适应，无固定空白；行 hover/展开有浅阴影，卡片 hover 抬升阴影。
-- 点击某一行原地展开该账户详情（进度条、剩余量、重置时间与实时倒计时），再点收起；**未来三个模型就是三行**，配置 `providers` 即可扩展。
-- 可拖动：按住卡片空白处拖到任意位置，位置记忆在浏览器本地，设置里可一键恢复默认位置。
-- 60 秒自动刷新（可调），页面隐藏时暂停，回到前台立即刷新；点击刷新按钮立即查询。
-- 设置面板（保存在浏览器本地）：按账户显示/隐藏、刷新间隔、余额与余量预警阈值。
+- 极简卡片：每个账户一行（状态点 + 名称 + 数值），宽度随内容自适应；行 hover/展开有浅阴影，卡片 hover 抬升阴影。无任何常驻按钮与底栏。
+- **波峰波谷提醒**：DeepSeek 行内嵌「低谷 / 高峰」时段徽标（低谷 = 北京时间每日 00:30–08:30，chat 5 折、reasoner 2.5 折），展开详情可见折扣说明与距离切换的倒计时，每秒跟随系统时钟刷新。
+- 点击某一行原地展开该账户详情（DeepSeek 充值/赠送拆分 + 峰谷说明；Kimi 各窗口进度条、剩余量与重置倒计时），再点收起；详情底部有更新时间与手动刷新。
+- 可拖动：按住卡片空白处拖到任意位置，位置记忆在浏览器本地。
+- 60 秒自动刷新（YAML 可调），页面隐藏时暂停，回到前台立即刷新。
+- 中英双语（跟随界面语言），跟随 DSH 设计 token（`--dsw-alias-*`），自动适配深浅主题。
 - 仅回环 Connection RPC（`authority: loopback`），API Key 只在宿主进程解析与使用。
-- 中英双语，跟随 DSH 设计 token（`--dsw-alias-*`），自动适配深浅主题。
+- 显示偏好（行、阈值、刷新间隔）全部走 profile YAML 配置，界面保持零设置项。
 
 ## 安装 / Install
 

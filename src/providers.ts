@@ -200,6 +200,29 @@ export function parseDeepSeekBalance(payload: unknown): BalanceView {
   }
 }
 
+/** DeepSeek peak/off-peak pricing state at one instant. */
+export interface PeakInfo {
+  /** True inside the daily off-peak window (00:30–08:30 Beijing time). */
+  offPeak: boolean
+  /** Minutes until the next peak ↔ off-peak transition. */
+  minutesLeft: number
+}
+
+/**
+ * DeepSeek off-peak (波谷) pricing window: every day 00:30–08:30 Beijing
+ * time (16:30–00:30 UTC). Inside the window deepseek-chat is 50% off and
+ * deepseek-reasoner 75% off. Pure wall-clock math — no network, no locale
+ * dependence. The client bundle mirrors these few lines (it cannot import
+ * from this module), so keep the two copies in sync.
+ */
+export function deepSeekPeakInfo(nowMs: number): PeakInfo {
+  const d = new Date(nowMs)
+  const minutes = (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % 1440
+  const offPeak = minutes >= 30 && minutes < 8 * 60 + 30
+  const target = offPeak ? 8 * 60 + 30 : 30
+  return { offPeak, minutesLeft: (target - minutes + 1440) % 1440 }
+}
+
 /** Adapter dispatch: one parsed view per provider kind. */
 export function parseProviderView(kind: ProviderKind, payload: unknown): ProviderView {
   if (kind === 'deepseek-balance') return parseDeepSeekBalance(payload)

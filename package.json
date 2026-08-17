@@ -1,6 +1,6 @@
 {
   "name": "dsh-quota-status",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Live account quota/balance widget for DeepSeek Harness web: DeepSeek API balance plus Kimi For Coding plan usage (weekly + 5h windows, remaining and reset countdowns) in one compact card.",
   "type": "module",
   "main": "lib/index.js",

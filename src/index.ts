@@ -13,9 +13,9 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { ConfigSchema, PLUGIN_ID, resolveConfig } from './config.js'
+import { ConfigSchema, DEFAULT_CODEX_AUTH_DIR, PLUGIN_ID, resolveConfig } from './config.js'
 import type { Config as ConfigInput, ProviderRow as ProviderRowInput } from './config.js'
-import { queryProvider } from './providers.js'
+import { loadCodexAuth, queryCodexUsage, queryProvider } from './providers.js'
 import type { ProviderResult, ProviderView } from './providers.js'
 
 export const name = 'quota-status'
@@ -26,14 +26,19 @@ export interface ProviderRow extends ProviderRowInput {}
 export const Config = ConfigSchema
 export {
   deepSeekPeakInfo,
+  loadCodexAuth,
+  parseCodexUsage,
   parseDeepSeekBalance,
   parseKimiUsage,
   parseProviderView,
+  queryCodexUsage,
   queryProvider,
   windowKeyOf,
+  windowKeyOfSeconds,
 } from './providers.js'
 export type {
   BalanceView,
+  CodexAuth,
   PeakInfo,
   UsageView,
   UsageWindow,
@@ -99,13 +104,15 @@ export function apply(ctx: Context, config: Config) {
   const resolveSpecs = async (): Promise<RowSpec[]> => {
     const rows: RowSpec[] = []
     for (const provider of resolved.providers) {
-      const hit = await host.credentials.resolve(provider.credential)
+      const configured = provider.kind === 'codex-usage'
+        ? loadCodexAuth(provider.authDir || DEFAULT_CODEX_AUTH_DIR) !== undefined
+        : await host.credentials.resolve(provider.credential).then((hit) => hit !== undefined && hit.value.length > 0)
       rows.push({
         id: provider.id,
         label: provider.label.length > 0 ? provider.label : provider.id,
         kind: provider.kind,
         credential: provider.credential,
-        configured: hit !== undefined && hit.value.length > 0,
+        configured,
         warnBalance: resolved.warnBalance,
         criticalBalance: resolved.criticalBalance,
         warnUsagePercent: resolved.warnUsagePercent,
@@ -124,6 +131,25 @@ export function apply(ctx: Context, config: Config) {
         kind: provider.kind,
         configured: false,
         status: 'missing',
+      }
+      if (provider.kind === 'codex-usage') {
+        const auth = loadCodexAuth(provider.authDir || DEFAULT_CODEX_AUTH_DIR)
+        if (auth === undefined) {
+          results.push({ ...base, error: provider.authDir || DEFAULT_CODEX_AUTH_DIR })
+          return
+        }
+        base.configured = true
+        try {
+          const view = await queryCodexUsage(provider.endpoint, auth, resolved.timeoutMs)
+          results.push({ ...base, status: 'ok', view })
+        } catch (error) {
+          results.push({
+            ...base,
+            status: 'error',
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+        return
       }
       const hit = await host.credentials.resolve(provider.credential)
       if (hit === undefined || hit.value.length === 0) {

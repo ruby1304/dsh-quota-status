@@ -10,7 +10,7 @@ export const PLUGIN_NAME = 'dsh-quota-status'
 export const PLUGIN_ID = 'quota-status'
 
 /** Provider kinds the host adapter understands. */
-export type ProviderKind = 'deepseek-balance' | 'kimi-usage'
+export type ProviderKind = 'deepseek-balance' | 'kimi-usage' | 'codex-usage'
 
 export interface ProviderRow {
   /** Stable row id used by the client and settings. */
@@ -19,10 +19,15 @@ export interface ProviderRow {
   label: string
   /** Adapter kind deciding the endpoint parsing. */
   kind: ProviderKind
-  /** Credential reference resolved through ctx.credentials. */
+  /** Credential reference resolved through ctx.credentials. Unused by codex-usage. */
   credential: string
-  /** GET endpoint queried with `Authorization: Bearer <credential>`. */
+  /** GET endpoint queried with the resolved credential / OAuth token. */
   endpoint: string
+  /**
+   * codex-usage only: directory holding CLIProxyAPI `codex-*.json` auth
+   * files (newest non-disabled one wins). `~` expands to the home dir.
+   */
+  authDir: string
 }
 
 export interface Config {
@@ -51,6 +56,7 @@ export const DEFAULT_PROVIDERS: ProviderRow[] = [
     kind: 'deepseek-balance',
     credential: 'DEEPSEEK_API_KEY',
     endpoint: 'https://api.deepseek.com/user/balance',
+    authDir: '',
   },
   {
     id: 'kimi-coding',
@@ -58,8 +64,12 @@ export const DEFAULT_PROVIDERS: ProviderRow[] = [
     kind: 'kimi-usage',
     credential: 'KIMI_CODING_API_KEY',
     endpoint: 'https://api.kimi.com/coding/v1/usages',
+    authDir: '',
   },
 ]
+
+/** Default location of the CLIProxyAPI auth store (codex-usage rows). */
+export const DEFAULT_CODEX_AUTH_DIR = '~/.cli-proxy-api'
 
 export const ConfigSchema = Schema.object({
   enabled: Schema.boolean().default(true),
@@ -75,16 +85,21 @@ export const ConfigSchema = Schema.object({
     kind: Schema.union([
       Schema.const('deepseek-balance'),
       Schema.const('kimi-usage'),
+      Schema.const('codex-usage'),
     ]).default('deepseek-balance'),
     credential: Schema.string().default(''),
     endpoint: Schema.string().default(''),
+    authDir: Schema.string().default(''),
   })).default(DEFAULT_PROVIDERS),
 }) as unknown as (value?: unknown) => Config
 
 export function resolveConfig(config: Config): Config {
   const providers = config.providers
-    .filter((row) => row.id.trim().length > 0 && row.credential.trim().length > 0 && row.endpoint.trim().length > 0)
-    .map((row) => ({ ...row, id: row.id.trim(), label: row.label.trim(), credential: row.credential.trim(), endpoint: row.endpoint.trim() }))
+    // codex-usage rows draw their OAuth token from the local CLIProxyAPI
+    // auth store instead of an env credential, so credential may be empty.
+    .filter((row) => row.id.trim().length > 0 && row.endpoint.trim().length > 0
+      && (row.kind === 'codex-usage' || row.credential.trim().length > 0))
+    .map((row) => ({ ...row, id: row.id.trim(), label: row.label.trim(), credential: row.credential.trim(), endpoint: row.endpoint.trim(), authDir: row.authDir.trim() }))
   const seen = new Set<string>()
   for (const row of providers) {
     if (seen.has(row.id)) {

@@ -3,9 +3,9 @@
 [![npm](https://img.shields.io/npm/v/dsh-quota-status)](https://www.npmjs.com/package/dsh-quota-status)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> DeepSeek Harness (DSH) web 插件：在一个极简卡片里实时查看 **DeepSeek API 余额** 和 **Kimi For Coding 套餐余量**（周限 + 5 小时窗口），带剩余量、进度条、重置倒计时和 DeepSeek 波峰/波谷电价提醒。
+> DeepSeek Harness (DSH) web 插件：在一个极简卡片里实时查看 **DeepSeek API 余额**、**Kimi For Coding 套餐余量**（周限 + 5 小时窗口）与 **ChatGPT（Codex）订阅限流窗口**，带剩余量、进度条、重置倒计时和 DeepSeek 波峰/波谷电价提醒。
 >
-> A DeepSeek Harness (DSH) web plugin: one minimal card for the **DeepSeek API balance** and the **Kimi For Coding plan quota** (weekly + 5h windows) — remaining amounts, progress bars, reset countdowns, and a DeepSeek peak/off-peak pricing reminder.
+> A DeepSeek Harness (DSH) web plugin: one minimal card for the **DeepSeek API balance**, the **Kimi For Coding plan quota** (weekly + 5h windows) and **ChatGPT (Codex) subscription rate limits** — remaining amounts, progress bars, reset countdowns, and a DeepSeek peak/off-peak pricing reminder.
 
 ![收起 / Collapsed](docs/images/card-collapsed.png)
 
@@ -57,9 +57,17 @@ dsh web
         kind: kimi-usage
         credential: KIMI_CODING_API_KEY
         endpoint: https://api.kimi.com/coding/v1/usages
+      # ChatGPT（Codex）订阅（可选，需本地 CLIProxyAPI 网关已登录 codex）：
+      # 读网关本地 OAuth 授权文件，查询官方 wham/usage 的 5h/周限窗口。
+      - id: codex-sub
+        label: Codex
+        kind: codex-usage
+        credential: ''        # codex-usage 无需 env 凭证
+        endpoint: https://chatgpt.com/backend-api/wham/usage
+        authDir: ~/.cli-proxy-api   # codex-*.json 所在目录，取最新未禁用文件
 ```
 
-`providers` 列表会整体替换默认列表；`kind` 目前支持 `deepseek-balance` 与 `kimi-usage`。
+`providers` 列表会整体替换默认列表；`kind` 支持 `deepseek-balance`、`kimi-usage` 与 `codex-usage`。`codex-usage` 行只在宿主进程读取 CLIProxyAPI 的本地 OAuth 授权文件（`access_token` + `account_id`），token 绝不进入浏览器或任何响应。
 
 ## 数据源 / Data sources
 
@@ -67,6 +75,7 @@ dsh web
 |---|---|---|
 | DeepSeek | `GET https://api.deepseek.com/user/balance` | 可用余额（充值 + 赠送），按量计费，无重置时间 |
 | Kimi For Coding | `GET https://api.kimi.com/coding/v1/usages` | 套餐周限（`usage`）+ 各窗口明细（`limits[]`，含 5h 滚动窗口与 `resetTime`） |
+| ChatGPT（Codex 订阅） | `GET https://chatgpt.com/backend-api/wham/usage` | 订阅限流窗口（`rate_limit.primary/secondary_window`，按 `limit_window_seconds` 归一化为 5h/周限；`used_percent` 换算剩余量；`plan_type` 显示为套餐等级），凭证来自 CLIProxyAPI 本地 auth 文件 |
 
 ## 开发 / Development
 
@@ -84,6 +93,7 @@ npm run build          # 输出 lib/（host + client bundle）
 ## 安全 / Security
 
 - API Key 只通过 `ctx.credentials.resolve()` 在宿主进程解析，不写入响应、日志或浏览器。
+- Codex 订阅的 OAuth token 只在宿主进程从 CLIProxyAPI 本地 auth 文件读取（取最新未禁用的 `codex-*.json`），同样不写入响应、日志或浏览器。
 - RPC channel 仅回环可访问（`authority: loopback`），浏览器只收到归一化后的余额/余量视图。
 - 上游数据可能略有延迟，仅供参考。
 

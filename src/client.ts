@@ -39,6 +39,7 @@
 				loading: "加载中…",
 				fetchFailed: "查询失败",
 				missingKey: "未配置 {ref}",
+				codexMissing: "未找到 CLIProxyAPI 的 codex 授权文件",
 				balanceUnavailable: "暂时无法获取余额",
 				usageUnavailable: "暂时无法获取用量",
 				emptyHint: "暂无配置的账户",
@@ -63,6 +64,7 @@
 				loading: "Loading…",
 				fetchFailed: "Query failed",
 				missingKey: "{ref} not configured",
+				codexMissing: "No CLIProxyAPI codex auth file found",
 				balanceUnavailable: "Balance unavailable",
 				usageUnavailable: "Usage unavailable",
 				emptyHint: "No accounts configured",
@@ -290,10 +292,15 @@
 			return "ok";
 		}
 
+		/** Usage-style rows (Kimi plan windows, Codex subscription windows). */
+		function isUsageKind(kind) {
+			return kind === "kimi-usage" || kind === "codex-usage";
+		}
+
 		/** One row view model for collapsed + detail rendering. */
 		function rowView(t, spec, entry) {
 			var ref = (entry && typeof entry.error === "string" && entry.error.length > 0) ? entry.error : (spec.credential || "KEY");
-			var missingText = tplReplace(t("missingKey"), { ref: ref });
+			var missingText = spec.kind === "codex-usage" ? t("codexMissing") : tplReplace(t("missingKey"), { ref: ref });
 			if (!entry) {
 				return { kind: spec.kind, status: "loading", value: "—", sub: t("loading"), windows: [], title: "" };
 			}
@@ -322,7 +329,7 @@
 					title: ""
 				};
 			}
-			if (spec.kind === "kimi-usage" && entry.view.kind === "usage") {
+			if (isUsageKind(spec.kind) && entry.view.kind === "usage") {
 				var u = entry.view;
 				var windows = [];
 				var worst = null;
@@ -568,7 +575,7 @@
 				var spec = props.spec;
 				var stateClass = view.status === "loading" ? "state-loading" : view.status === "warn" ? "state-warn" : view.status === "error" ? "state-error" : "state-ok";
 				var valueChildren = [];
-				if (spec.kind === "kimi-usage" && view.windows.length > 0) {
+				if (isUsageKind(spec.kind) && view.windows.length > 0) {
 					for (var i = 0; i < view.windows.length; i++) {
 						var wv = view.windows[i];
 						var win = wv.window;
@@ -632,7 +639,7 @@
 					var pk = peakInfo(props.nowMs);
 					children.push(React.createElement("div", { key: "peak-now", className: "dsh-detail-line dsh-peak-now" },
 						tplReplace(t(pk.offPeak ? "offPeakNow" : "peakNow"), { span: fmtSpanMin(pk.minutesLeft) })));
-				} else if (view.kind === "kimi-usage") {
+				} else if (isUsageKind(view.kind)) {
 					for (var i = 0; i < view.windows.length; i++) {
 						var wv = view.windows[i];
 						var win = wv.window;

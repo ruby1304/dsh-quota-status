@@ -1,10 +1,17 @@
+import { mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   deepSeekPeakInfo,
+  loadCodexAuth,
+  parseCodexUsage,
   parseDeepSeekBalance,
   parseKimiUsage,
+  queryCodexUsage,
   queryProvider,
   windowKeyOf,
+  windowKeyOfSeconds,
 } from '../src/providers.js'
 
 const DEEPSEEK_FIXTURE = {
@@ -119,6 +126,109 @@ describe('windowKeyOf', () => {
   it('rejects unknown shapes', () => {
     expect(windowKeyOf(undefined)).toBeUndefined()
     expect(windowKeyOf({ duration: 0, timeUnit: 'TIME_UNIT_MINUTE' })).toBeUndefined()
+  })
+})
+
+describe('parseCodexUsage', () => {
+  // Real 2026-08 capture: a Pro account exposes only the weekly primary window.
+  const CODEX_FIXTURE = {
+    plan_type: 'pro',
+    rate_limit: {
+      allowed: true,
+      limit_reached: false,
+      primary_window: { used_percent: 12.4, limit_window_seconds: 604800, reset_at: 1787281247 },
+      secondary_window: null,
+    },
+  }
+
+  it('maps the weekly window by limit_window_seconds, remaining = 100 - used', () => {
+    const view = parseCodexUsage(CODEX_FIXTURE)
+    expect(view.kind).toBe('usage')
+    expect(view.membership).toBe('Pro')
+    expect(view.windows).toEqual([
+      {
+        key: 'weekly',
+        label: 'week',
+        remaining: 88,
+        limit: 100,
+        used: 12,
+        percentRemaining: 88,
+        resetAt: new Date(1787281247 * 1000).toISOString(),
+      },
+    ])
+  })
+
+  it('supports 5h + weekly dual windows and clamps percents', () => {
+    const view = parseCodexUsage({
+      plan_type: 'plus',
+      rate_limit: {
+        primary_window: { used_percent: 26, limit_window_seconds: 18000, reset_at: 1787281247 },
+        secondary_window: { used_percent: 105, limit_window_seconds: 604800 },
+      },
+    })
+    expect(view.windows.map((w) => w.key)).toEqual(['5h', 'weekly'])
+    expect(view.windows[0]).toMatchObject({ remaining: 74, percentRemaining: 74 })
+    expect(view.windows[1]).toMatchObject({ remaining: 0, percentRemaining: 0, used: 100 })
+    expect(view.membership).toBe('Plus')
+  })
+
+  it('rejects payloads without usable windows', () => {
+    expect(() => parseCodexUsage({ rate_limit: { primary_window: null, secondary_window: null } })).toThrow(/rate_limit/)
+    expect(() => parseCodexUsage({})).toThrow(/rate_limit/)
+  })
+})
+
+describe('windowKeyOfSeconds', () => {
+  it('maps known and unknown durations to stable labels', () => {
+    expect(windowKeyOfSeconds(18000)).toBe('5h')
+    expect(windowKeyOfSeconds(604800)).toBe('weekly')
+    expect(windowKeyOfSeconds(7200)).toBe('2h')
+    expect(windowKeyOfSeconds(172800)).toBe('2d')
+    expect(windowKeyOfSeconds(5401)).toBe('5401s')
+  })
+})
+
+describe('loadCodexAuth', () => {
+  it('picks the newest non-disabled codex file and skips malformed ones', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'codex-auth-'))
+    const oldFile = join(dir, 'codex-old@gmail.com-pro.json')
+    writeFileSync(oldFile, JSON.stringify({ access_token: 'old', account_id: 'a1' }))
+    const past = new Date(Date.now() - 60000)
+    utimesSync(oldFile, past, past)
+    writeFileSync(join(dir, 'codex-new@gmail.com-pro.json'), JSON.stringify({ access_token: 'new', account_id: 'a2' }))
+    writeFileSync(join(dir, 'codex-bad.json'), 'not json')
+    writeFileSync(join(dir, 'other.json'), JSON.stringify({ access_token: 'x', account_id: 'y' }))
+    const auth = loadCodexAuth(dir)
+    expect(auth).toMatchObject({ accessToken: 'new', accountId: 'a2' })
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('skips disabled files and returns undefined for a missing dir', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'codex-auth-'))
+    writeFileSync(join(dir, 'codex-off@gmail.com-pro.json'), JSON.stringify({ access_token: 't', account_id: 'a', disabled: true }))
+    expect(loadCodexAuth(dir)).toBeUndefined()
+    expect(loadCodexAuth(join(dir, 'nope'))).toBeUndefined()
+    rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+describe('queryCodexUsage', () => {
+  it('sends bearer + account headers and parses the usage view', async () => {
+    const seen: Array<{ url: string; headers: Record<string, string> }> = []
+    const fetchImpl = async (url: string, init: RequestInit) => {
+      seen.push({ url, headers: init.headers as Record<string, string> })
+      return new Response(JSON.stringify({
+        plan_type: 'pro',
+        rate_limit: {
+          primary_window: { used_percent: 0, limit_window_seconds: 604800, reset_at: 1787281247 },
+          secondary_window: null,
+        },
+      }), { status: 200 })
+    }
+    const view = await queryCodexUsage('https://chatgpt.com/backend-api/wham/usage', { accessToken: 'tok', accountId: 'acc', file: '/x' }, 15000, fetchImpl)
+    expect(seen[0]?.headers.Authorization).toBe('Bearer tok')
+    expect(seen[0]?.headers['chatgpt-account-id']).toBe('acc')
+    expect(view.windows[0]?.key).toBe('weekly')
   })
 })
 

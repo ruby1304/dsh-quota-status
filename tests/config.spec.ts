@@ -39,8 +39,8 @@ describe('resolveConfig', () => {
     const resolved = resolveConfig({
       ...config,
       providers: [
-        { id: '', label: 'x', kind: 'kimi-usage', credential: 'K', endpoint: 'https://x' },
-        { id: ' deepseek ', label: ' DeepSeek ', kind: 'deepseek-balance', credential: 'DEEPSEEK_API_KEY', endpoint: 'https://api.deepseek.com/user/balance' },
+        { id: '', label: 'x', kind: 'kimi-usage', credential: 'K', endpoint: 'https://x', authDir: '' },
+        { id: ' deepseek ', label: ' DeepSeek ', kind: 'deepseek-balance', credential: 'DEEPSEEK_API_KEY', endpoint: 'https://api.deepseek.com/user/balance', authDir: '' },
       ],
     })
     expect(resolved.providers).toHaveLength(1)
@@ -49,7 +49,19 @@ describe('resolveConfig', () => {
 
   it('rejects duplicate provider ids', () => {
     const config = ConfigSchema({})
-    const row = { id: 'deepseek', label: 'DeepSeek', kind: 'deepseek-balance' as const, credential: 'DEEPSEEK_API_KEY', endpoint: 'https://x' }
+    const row = { id: 'deepseek', label: 'DeepSeek', kind: 'deepseek-balance' as const, credential: 'DEEPSEEK_API_KEY', endpoint: 'https://x', authDir: '' }
     expect(() => resolveConfig({ ...config, providers: [row, { ...row }] })).toThrow(/duplicate provider id/)
+  })
+
+  it('keeps codex-usage rows without an env credential and trims authDir', () => {
+    const config = ConfigSchema({})
+    const resolved = resolveConfig({
+      ...config,
+      providers: [
+        { id: 'codex-sub', label: 'Codex', kind: 'codex-usage' as const, credential: '', endpoint: 'https://chatgpt.com/backend-api/wham/usage', authDir: ' ~/.cli-proxy-api ' },
+      ],
+    })
+    expect(resolved.providers).toHaveLength(1)
+    expect(resolved.providers[0]).toMatchObject({ id: 'codex-sub', authDir: '~/.cli-proxy-api' })
   })
 })

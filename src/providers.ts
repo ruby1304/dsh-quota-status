@@ -1,9 +1,13 @@
 /**
  * Provider adapters: upstream JSON → normalized views the client renders.
- * Pure functions only — no credentials, no network outside queryProvider.
+ * Pure functions only — no credentials, no network outside queryProvider /
+ * queryCodexUsage, no filesystem outside loadCodexAuth.
  * @module dsh-quota-status/providers
  */
 
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import type { ProviderKind } from './config.js'
 
 /** Monetary balance view (DeepSeek). */
@@ -230,10 +234,152 @@ export function deepSeekPeakInfo(nowMs: number): PeakInfo {
   }
 }
 
+/** Window key from a codex `limit_window_seconds` value. */
+export function windowKeyOfSeconds(seconds: number): string {
+  if (seconds === 18000) return '5h'
+  if (seconds === 604800) return 'weekly'
+  if (seconds % 86400 === 0) return `${seconds / 86400}d`
+  if (seconds % 3600 === 0) return `${seconds / 3600}h`
+  if (seconds % 60 === 0) return `${seconds / 60}min`
+  return `${seconds}s`
+}
+
+export interface CodexUsageWindowPayload {
+  used_percent?: unknown
+  limit_window_seconds?: unknown
+  reset_at?: unknown
+}
+
+export interface CodexUsagePayload {
+  plan_type?: unknown
+  rate_limit?: {
+    primary_window?: CodexUsageWindowPayload | null
+    secondary_window?: CodexUsageWindowPayload | null
+  } | null
+}
+
+/**
+ * Parse `GET https://chatgpt.com/backend-api/wham/usage` (ChatGPT/Codex
+ * subscription, observed 2026-08): rate_limit.primary_window /
+ * secondary_window keyed by limit_window_seconds (18000 → 5h,
+ * 604800 → weekly; a Pro account may expose only the weekly window).
+ * `used_percent` is the USED percentage; remaining = 100 - used.
+ * `additional_rate_limits` (per-model buckets like Codex Spark) are
+ * intentionally ignored to keep the row minimal.
+ */
+export function parseCodexUsage(payload: unknown): UsageView {
+  const rec = (payload ?? {}) as CodexUsagePayload
+  const rateLimit = rec.rate_limit ?? undefined
+  const rawWindows = [rateLimit?.primary_window, rateLimit?.secondary_window]
+  const windows: UsageWindow[] = []
+  const seen = new Set<string>()
+  for (const raw of rawWindows) {
+    if (!raw) continue
+    const seconds = toFiniteNumber(raw.limit_window_seconds)
+    const used = toFiniteNumber(raw.used_percent)
+    if (seconds === undefined || seconds <= 0 || used === undefined) continue
+    const key = windowKeyOfSeconds(seconds)
+    if (seen.has(key)) continue
+    seen.add(key)
+    const remainingPct = Math.max(0, Math.min(100, Math.round(100 - used)))
+    const resetAt = toFiniteNumber(raw.reset_at)
+    windows.push({
+      key,
+      label: windowLabel(key),
+      remaining: remainingPct,
+      limit: 100,
+      used: Math.max(0, Math.min(100, Math.round(used))),
+      percentRemaining: remainingPct,
+      ...(resetAt !== undefined && resetAt > 0 ? { resetAt: new Date(resetAt * 1000).toISOString() } : {}),
+    })
+  }
+  if (windows.length === 0) throw new Error('codex-usage: no usable rate_limit window')
+  const plan = typeof rec.plan_type === 'string' && rec.plan_type.length > 0 ? rec.plan_type : undefined
+  return {
+    kind: 'usage',
+    ...(plan !== undefined ? { membership: plan.charAt(0).toUpperCase() + plan.slice(1) } : {}),
+    windows,
+  }
+}
+
+/** OAuth material from one CLIProxyAPI codex auth file. */
+export interface CodexAuth {
+  accessToken: string
+  accountId: string
+  /** Absolute auth file path — diagnostics only, never sent to the client. */
+  file: string
+}
+
+/**
+ * Pick the newest non-disabled `codex-*.json` from the CLIProxyAPI auth
+ * store. `~` expands to the home directory; a missing/unreadable store or
+ * all-disabled/malformed files yield undefined (row shows "not configured").
+ */
+export function loadCodexAuth(authDir: string): CodexAuth | undefined {
+  const dir = authDir.startsWith('~') ? join(homedir(), authDir.slice(1)) : authDir
+  let names: string[]
+  try {
+    names = readdirSync(dir)
+  } catch {
+    return undefined
+  }
+  const candidates = names
+    .filter((name) => /^codex-.+\.json$/.test(name))
+    .map((name) => {
+      const file = join(dir, name)
+      let mtimeMs = 0
+      try {
+        mtimeMs = statSync(file).mtimeMs
+      } catch { /* unreadable stat sorts last */ }
+      return { file, mtimeMs }
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+  for (const candidate of candidates) {
+    try {
+      const rec = JSON.parse(readFileSync(candidate.file, 'utf8')) as Record<string, unknown>
+      const accessToken = typeof rec.access_token === 'string' ? rec.access_token : ''
+      const accountId = typeof rec.account_id === 'string' ? rec.account_id : ''
+      if (accessToken.length > 0 && accountId.length > 0 && rec.disabled !== true) {
+        return { accessToken, accountId, file: candidate.file }
+      }
+    } catch { /* malformed file → try the next one */ }
+  }
+  return undefined
+}
+
+/** Query the ChatGPT subscription usage endpoint with a CLIProxyAPI codex auth. */
+export async function queryCodexUsage(
+  endpoint: string,
+  auth: CodexAuth,
+  timeoutMs: number,
+  fetchImpl: FetchJson = fetch,
+): Promise<UsageView> {
+  const response = await fetchImpl(endpoint, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${auth.accessToken}`,
+      'chatgpt-account-id': auth.accountId,
+      Accept: 'application/json',
+    },
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  if (!response.ok) {
+    throw new Error(`provider http ${response.status}`)
+  }
+  let payload: unknown
+  try {
+    payload = await response.json()
+  } catch {
+    throw new Error('provider returned invalid json')
+  }
+  return parseCodexUsage(payload)
+}
+
 /** Adapter dispatch: one parsed view per provider kind. */
 export function parseProviderView(kind: ProviderKind, payload: unknown): ProviderView {
   if (kind === 'deepseek-balance') return parseDeepSeekBalance(payload)
   if (kind === 'kimi-usage') return parseKimiUsage(payload)
+  if (kind === 'codex-usage') return parseCodexUsage(payload)
   throw new Error(`unknown provider kind: ${String(kind)}`)
 }
 

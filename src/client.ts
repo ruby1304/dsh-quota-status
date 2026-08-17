@@ -2,13 +2,16 @@
  * dsh-quota-status — client half (browser bundle, served at
  * /plugins/dsh-quota-status/client.js through the `dsh.client` manifest).
  *
- * One minimal `shell.overlay` card anchored bottom-right: one row per
- * account (status dot + name + value), click a row to expand its detail
- * (DeepSeek topped-up/granted split + peak/off-peak pricing reminder,
- * Kimi per-window progress bars with live reset countdowns, updated-at
- * line with a refresh action). DeepSeek rows carry a peak/off-peak pill
- * driven by wall-clock time (peak: 09:00–12:00 & 14:00–18:00 Beijing
- * daily, all other hours off-peak at half price). All strings are localized zh/en through the host
+ * One minimal `shell.overlay` card anchored bottom-right, fixed width so
+ * expanding a row never resizes it: one row per account (status dot +
+ * name + value), click a row to expand its detail (DeepSeek topped-up /
+ * granted split + a one-line peak countdown, Kimi per-window progress
+ * bars with live reset countdowns, updated-at line with a refresh
+ * action). DeepSeek values and dots are tier-colored by balance (green
+ * ≥100 · yellow 20–99 · red 1–19 · gray below), and DeepSeek rows carry
+ * a peak/off-peak pill driven by wall-clock time (peak: 09:00–12:00 &
+ * 14:00–18:00 Beijing daily, all other hours off-peak at half price;
+ * the full schedule lives in the pill's tooltip). All strings are localized zh/en through the host
  * locale service; all provider data arrives over the loopback Connection
  * RPC channel `/dsh-quota-status`; API keys never reach the browser.
  *
@@ -84,7 +87,7 @@
 			"#dsh-quota-status{position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;align-items:flex-end;pointer-events:auto;color:var(--dsw-alias-label-primary,#1b1b1c);font-family:var(--dsw-font-family,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif);font-size:12px;line-height:1.45;user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab}",
 			"#dsh-quota-status.is-dragging{cursor:grabbing}",
 			"#dsh-quota-status.is-dragging #dsh-quota-card{box-shadow:0 6px 20px rgba(0,0,0,.16);transition:none}",
-			"#dsh-quota-card{min-width:190px;max-width:320px;padding:6px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:0 2px 12px rgba(0,0,0,.08);box-sizing:border-box;transition:box-shadow .15s ease}",
+			"#dsh-quota-card{width:260px;padding:6px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);box-shadow:0 2px 12px rgba(0,0,0,.08);box-sizing:border-box;transition:box-shadow .15s ease}",
 			"#dsh-quota-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}",
 			"#dsh-quota-card .dsh-provider-row{display:flex;align-items:center;gap:8px;padding:3px 8px;border-radius:8px;white-space:nowrap;cursor:pointer;transition:background-color .12s ease,box-shadow .12s ease}",
 			"#dsh-quota-card .dsh-provider-row:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
@@ -101,6 +104,14 @@
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-warn{color:var(--dsw-static-amber-500,#f59e0b)}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-error{color:var(--dsw-static-red-500,#ef4444)}",
 			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.state-loading{color:var(--dsw-alias-label-secondary,#61666b);font-weight:400}",
+			"#dsh-quota-card .dsh-provider-row.lv-green .dsh-status-dot{background:#10b981}",
+			"#dsh-quota-card .dsh-provider-row.lv-yellow .dsh-status-dot{background:#f59e0b}",
+			"#dsh-quota-card .dsh-provider-row.lv-red .dsh-status-dot{background:#ef4444}",
+			"#dsh-quota-card .dsh-provider-row.lv-gray .dsh-status-dot{background:#9ca3af}",
+			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.lv-green{color:#10b981}",
+			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.lv-yellow{color:#b45309}",
+			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.lv-red{color:#ef4444}",
+			"#dsh-quota-card .dsh-provider-value .dsh-value-seg.lv-gray{color:#9ca3af}",
 			"#dsh-quota-card .dsh-peak-pill{flex:none;display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;letter-spacing:.01em;font-variant-numeric:tabular-nums}",
 			"#dsh-quota-card .dsh-peak-pill.is-offpeak{color:var(--dsw-static-green-500,#10b981);background:rgba(16,185,129,.14)}",
 			"#dsh-quota-card .dsh-peak-pill.is-peak{color:var(--dsw-alias-label-tertiary,#818590);background:var(--dsw-alias-bg-overlay,rgba(0,0,0,.05))}",
@@ -246,6 +257,15 @@
 			};
 		}
 
+		/** Balance color tier (same scale llm-balance uses): green ≥100, yellow 20–99, red 1–19, gray below. */
+		function balanceTier(amount) {
+			if (!Number.isFinite(amount)) return "gray";
+			if (amount >= 100) return "green";
+			if (amount >= 20) return "yellow";
+			if (amount >= 1) return "red";
+			return "gray";
+		}
+
 		function balanceState(amount, critical, warn) {
 			if (amount === null || !Number.isFinite(amount)) return "loading";
 			if (amount < critical) return "error";
@@ -283,6 +303,7 @@
 				return {
 					kind: spec.kind,
 					status: status,
+					tier: v.available === false ? "gray" : balanceTier(v.amount),
 					value: money(v.amount, v.currency),
 					sub: v.available === false
 						? t("notAvailable")
@@ -548,7 +569,7 @@
 							win.percentRemaining + "%"));
 					}
 				} else {
-					valueChildren.push(React.createElement("span", { key: "main", className: "dsh-value-seg " + stateClass }, view.value || "—"));
+					valueChildren.push(React.createElement("span", { key: "main", className: "dsh-value-seg " + (view.tier ? "lv-" + view.tier : stateClass) }, view.value || "—"));
 				}
 				if (spec.kind === "deepseek-balance") {
 					var pk = peakInfo(props.nowMs);
@@ -559,7 +580,7 @@
 					}, (pk.offPeak ? "☾ " : "☀ ") + t(pk.offPeak ? "offPeak" : "peak")));
 				}
 				return React.createElement("div", {
-					className: "dsh-provider-row " + stateClass + (props.open ? " is-open" : ""),
+					className: "dsh-provider-row " + stateClass + (view.tier ? " lv-" + view.tier : "") + (props.open ? " is-open" : ""),
 					role: "button",
 					tabIndex: 0,
 					"aria-expanded": props.open ? "true" : "false",
@@ -599,7 +620,6 @@
 				if (view.kind === "deepseek-balance") {
 					children.push(React.createElement("div", { key: "sub", className: "dsh-detail-line" }, view.sub || t("balanceUnavailable")));
 					var pk = peakInfo(props.nowMs);
-					children.push(React.createElement("div", { key: "peak-desc", className: "dsh-detail-line" }, t("peakDesc")));
 					children.push(React.createElement("div", { key: "peak-now", className: "dsh-detail-line dsh-peak-now" },
 						tplReplace(t(pk.offPeak ? "offPeakNow" : "peakNow"), { span: fmtSpanMin(pk.minutesLeft) })));
 				} else if (view.kind === "kimi-usage") {

@@ -57,10 +57,10 @@ dsh web
         kind: kimi-usage
         credential: KIMI_CODING_API_KEY
         endpoint: https://api.kimi.com/coding/v1/usages
-      # ChatGPT（Codex）订阅（可选，需本地 CLIProxyAPI 网关已登录 codex）：
+      # ChatGPT 订阅（可选，需本地 CLIProxyAPI 网关已登录 codex）：
       # 读网关本地 OAuth 授权文件，查询官方 wham/usage 的 5h/周限窗口。
       - id: codex-sub
-        label: Codex
+        label: ChatGPT
         kind: codex-usage
         credential: ''        # codex-usage 无需 env 凭证
         endpoint: https://chatgpt.com/backend-api/wham/usage

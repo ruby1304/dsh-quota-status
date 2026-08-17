@@ -195,11 +195,23 @@ describe('loadCodexAuth', () => {
     writeFileSync(oldFile, JSON.stringify({ access_token: 'old', account_id: 'a1' }))
     const past = new Date(Date.now() - 60000)
     utimesSync(oldFile, past, past)
-    writeFileSync(join(dir, 'codex-new@gmail.com-pro.json'), JSON.stringify({ access_token: 'new', account_id: 'a2' }))
+    writeFileSync(join(dir, 'codex-new@gmail.com-pro.json'), JSON.stringify({
+      access_token: 'new',
+      account_id: 'a2',
+      email: 'new@gmail.com',
+      expired: '2026-08-30T00:00:00Z',
+      last_refresh: '2026-08-17T08:00:00Z',
+    }))
     writeFileSync(join(dir, 'codex-bad.json'), 'not json')
     writeFileSync(join(dir, 'other.json'), JSON.stringify({ access_token: 'x', account_id: 'y' }))
     const auth = loadCodexAuth(dir)
-    expect(auth).toMatchObject({ accessToken: 'new', accountId: 'a2' })
+    expect(auth).toMatchObject({
+      accessToken: 'new',
+      accountId: 'a2',
+      email: 'new@gmail.com',
+      expired: '2026-08-30T00:00:00Z',
+      lastRefresh: '2026-08-17T08:00:00Z',
+    })
     rmSync(dir, { recursive: true, force: true })
   })
 

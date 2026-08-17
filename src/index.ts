@@ -12,10 +12,11 @@
  * @module dsh-quota-status
  */
 
+import { spawn } from 'node:child_process'
 import type { Context } from '@deepseek-ai/cordis'
 import { ConfigSchema, DEFAULT_CODEX_AUTH_DIR, PLUGIN_ID, resolveConfig } from './config.js'
 import type { Config as ConfigInput, ProviderRow as ProviderRowInput } from './config.js'
-import { loadCodexAuth, queryCodexUsage, queryProvider } from './providers.js'
+import { expandHome, loadCodexAuth, queryCodexUsage, queryProvider } from './providers.js'
 import type { ProviderResult, ProviderView } from './providers.js'
 
 export const name = 'quota-status'
@@ -171,6 +172,58 @@ export function apply(ctx: Context, config: Config) {
     return results.sort((a, b) => resolved.providers.findIndex((row) => row.id === a.id) - resolved.providers.findIndex((row) => row.id === b.id))
   }
 
+  /** Auth dir of the first codex-usage row (settings-tab login/status act on it). */
+  const codexAuthDir = () =>
+    resolved.providers.find((row) => row.kind === 'codex-usage')?.authDir || DEFAULT_CODEX_AUTH_DIR
+
+  // ChatGPT login flow state: one CLIProxyAPI `-codex-login` process at a
+  // time; its output is scanned for the OAuth URL so the settings tab can
+  // surface it when the browser did not open automatically.
+  let loginProc: ReturnType<typeof spawn> | null = null
+  let loginUrl: string | null = null
+  let loginExit: { code: number; at: number } | null = null
+
+  const startCodexLogin = (): boolean => {
+    if (loginProc !== null) return false
+    loginUrl = null
+    loginExit = null
+    try {
+      const proc = spawn(
+        resolved.codexBinary,
+        ['-codex-login', '-config', expandHome(resolved.codexConfigPath)],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      )
+      loginProc = proc
+      const onData = (chunk: unknown) => {
+        const match = String(chunk).match(/https:\/\/\S+/)
+        if (match) loginUrl = match[0].replace(/["'>\])}，。；]+$/, '')
+      }
+      proc.stdout?.on('data', onData)
+      proc.stderr?.on('data', onData)
+      proc.on('exit', (code) => {
+        loginProc = null
+        loginExit = { code: code ?? -1, at: Date.now() }
+      })
+      proc.on('error', () => {
+        loginProc = null
+        loginExit = { code: -1, at: Date.now() }
+      })
+    } catch {
+      loginExit = { code: -1, at: Date.now() }
+    }
+    return loginProc !== null
+  }
+
+  // A login in flight must not outlive the plugin run.
+  ctx.effect(() => () => {
+    if (loginProc !== null) {
+      try {
+        loginProc.kill()
+      } catch { /* already exited */ }
+      loginProc = null
+    }
+  })
+
   host.connection.rpc.handle(
     RPC_CHANNEL,
     async (endpoint, payload, _signal) => {
@@ -183,6 +236,22 @@ export function apply(ctx: Context, config: Config) {
             return ok({ rows: [], fetchedAt: Date.now(), enabled: false })
           }
           return ok({ rows: await fetchAll(), fetchedAt: Date.now(), enabled: true })
+        }
+        if (endpoint === 'codex-auth-status') {
+          const auth = loadCodexAuth(codexAuthDir())
+          return ok({
+            configured: auth !== undefined,
+            ...(auth?.email !== undefined ? { email: auth.email } : {}),
+            ...(auth?.expired !== undefined ? { expired: auth.expired } : {}),
+            ...(auth?.lastRefresh !== undefined ? { lastRefresh: auth.lastRefresh } : {}),
+            loginRunning: loginProc !== null,
+            loginUrl,
+            loginExitCode: loginExit ? loginExit.code : null,
+            loginExitAt: loginExit ? loginExit.at : null,
+          })
+        }
+        if (endpoint === 'codex-login') {
+          return ok({ started: startCodexLogin(), loginRunning: loginProc !== null })
         }
         return fail(`unknown endpoint: ${String(endpoint)}`)
       } catch (error) {

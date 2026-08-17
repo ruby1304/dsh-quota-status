@@ -9,6 +9,8 @@ describe('ConfigSchema', () => {
     expect(config.timeoutMs).toBe(15000)
     expect(config.warnBalance).toBe(20)
     expect(config.criticalBalance).toBe(10)
+    expect(config.codexBinary).toBe('cliproxyapi')
+    expect(config.codexConfigPath).toBe('~/.cli-proxy-api/config.yaml')
     expect(config.providers).toHaveLength(DEFAULT_PROVIDERS.length)
     expect(config.providers.map((row) => row.id)).toEqual(['deepseek', 'kimi-coding'])
   })
@@ -58,7 +60,7 @@ describe('resolveConfig', () => {
     const resolved = resolveConfig({
       ...config,
       providers: [
-        { id: 'codex-sub', label: 'Codex', kind: 'codex-usage' as const, credential: '', endpoint: 'https://chatgpt.com/backend-api/wham/usage', authDir: ' ~/.cli-proxy-api ' },
+        { id: 'codex-sub', label: 'ChatGPT', kind: 'codex-usage' as const, credential: '', endpoint: 'https://chatgpt.com/backend-api/wham/usage', authDir: ' ~/.cli-proxy-api ' },
       ],
     })
     expect(resolved.providers).toHaveLength(1)

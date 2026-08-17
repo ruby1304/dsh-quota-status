@@ -22,7 +22,8 @@
 - 60 秒自动刷新（YAML 可调），页面隐藏时暂停，回到前台立即刷新。
 - 中英双语（跟随界面语言），跟随 DSH 设计 token（`--dsw-alias-*`），自动适配深浅主题。
 - 仅回环 Connection RPC（`authority: loopback`），API Key 只在宿主进程解析与使用。
-- 显示偏好（行、阈值、刷新间隔）全部走 profile YAML 配置，界面保持零设置项。
+- **插件配置卡片**：在「设置 → 插件 → 插件配置」中直接查看三类账户状态；ChatGPT 可在这里启动 CLIProxyAPI 浏览器 OAuth 登录或重新登录，无需打开终端。OAuth token 只在宿主进程和本地 auth 文件之间流转。
+- 显示偏好（行、阈值、刷新间隔）继续走 profile YAML 配置，账户登录等交互动作放在插件配置卡片里。
 
 ## 安装 / Install
 
@@ -46,6 +47,8 @@ dsh web
     criticalBalance: 10       # 低于 10 变红
     warnUsagePercent: 40      # Kimi 余量低于 40% 变黄
     criticalUsagePercent: 15  # 低于 15% 变红
+    codexBinary: cliproxyapi  # 设置页「登录 ChatGPT」调用的本机程序
+    codexConfigPath: ~/.cli-proxy-api/config.yaml
     providers:
       - id: deepseek
         label: DeepSeek

@@ -57,6 +57,23 @@
 				peakDesc: "高峰 09:00–12:00、14:00–18:00（北京时间）· 其余时段低谷半价",
 				offPeakNow: "正在低谷 · {span} 后结束",
 				peakNow: "正在高峰 · {span} 后进入低谷",
+				settingsTab: "配额余量",
+				settingsDescription: "查看账户用量并管理 ChatGPT 登录。",
+				accountsTitle: "账户状态",
+				chatgptTitle: "ChatGPT 订阅",
+				signedInAs: "已登录 {email}",
+				authUpdated: "授权更新于 {time}",
+				notSignedIn: "未登录（未找到本机授权文件）",
+				login: "登录 ChatGPT",
+				relogin: "重新登录",
+				waitingAuth: "等待浏览器授权…",
+				loginOpened: "已在浏览器打开授权页；若未打开请手动访问：",
+				openLink: "打开链接",
+				loginTimeout: "等待超时，未完成授权",
+				loginFailed: "登录进程异常退出，请重试",
+				loginDone: "登录成功",
+				refreshStatus: "刷新状态",
+				gatewayNote: "登录由本机 CLIProxyAPI 完成，OAuth 凭证不会进入浏览器页面。",
 			},
 			en: {
 				title: "Quota",
@@ -82,6 +99,23 @@
 				peakDesc: "Peak 09:00–12:00 & 14:00–18:00 (UTC+8) · off-peak half price",
 				offPeakNow: "Off-peak · ends in {span}",
 				peakNow: "Peak · off-peak in {span}",
+				settingsTab: "Quota",
+				settingsDescription: "View account quota and manage ChatGPT sign-in.",
+				accountsTitle: "Account status",
+				chatgptTitle: "ChatGPT subscription",
+				signedInAs: "Signed in as {email}",
+				authUpdated: "Authorization updated {time}",
+				notSignedIn: "Not signed in (no local auth file found)",
+				login: "Sign in with ChatGPT",
+				relogin: "Sign in again",
+				waitingAuth: "Waiting for browser authorization…",
+				loginOpened: "The authorization page opened in your browser. If it did not, open:",
+				openLink: "Open link",
+				loginTimeout: "Timed out waiting for authorization",
+				loginFailed: "The login process exited unexpectedly. Try again.",
+				loginDone: "Signed in successfully",
+				refreshStatus: "Refresh status",
+				gatewayNote: "Sign-in is handled by local CLIProxyAPI; OAuth credentials never enter the browser page.",
 			}
 		};
 
@@ -138,7 +172,33 @@
 			"#dsh-quota-card .dsh-detail-refresh:hover{color:var(--dsw-alias-label-primary,#1b1b1c);background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05))}",
 			"#dsh-quota-card .dsh-detail-refresh:disabled{cursor:default;opacity:.55}",
 			"#dsh-quota-card .dsh-detail-refresh.is-loading{animation:dsh-quota-spin .7s linear infinite}",
-			"@keyframes dsh-quota-spin{to{transform:rotate(360deg)}}"
+			"@keyframes dsh-quota-spin{to{transform:rotate(360deg)}}",
+			".dsh-quota-settings{list-style:none;overflow:hidden;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff);color:var(--dsw-alias-label-primary,#1b1b1c);font-family:var(--dsw-font-family,-apple-system,BlinkMacSystemFont,\"Segoe UI\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif)}",
+			".dsh-quota-settings .qs-header{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;border:0;background:transparent;text-align:left;cursor:pointer;color:inherit;font:inherit}",
+			".dsh-quota-settings .qs-header:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.035))}",
+			".dsh-quota-settings .qs-head-text{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}",
+			".dsh-quota-settings .qs-description{font-size:12px;color:var(--dsw-alias-label-secondary,#61666b)}",
+			".dsh-quota-settings .qs-chevron{flex:none;color:var(--dsw-alias-label-tertiary,#8b9096);transition:transform .16s ease}",
+			".dsh-quota-settings.is-open .qs-chevron{transform:rotate(180deg)}",
+			".dsh-quota-settings .qs-body{display:flex;flex-direction:column;gap:12px;padding:0 14px 14px}",
+			".dsh-quota-settings .qs-card{display:flex;flex-direction:column;gap:9px;padding:13px 14px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.08));border-radius:12px;background:var(--dsw-alias-bg-layer-2,#fff)}",
+			".dsh-quota-settings .qs-title{font-size:13px;font-weight:600;line-height:20px}",
+			".dsh-quota-settings .qs-row{display:flex;align-items:center;gap:8px;min-height:22px;font-size:12px;color:var(--dsw-alias-label-secondary,#61666b)}",
+			".dsh-quota-settings .qs-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+			".dsh-quota-settings .qs-value{font-variant-numeric:tabular-nums;font-weight:600;color:var(--dsw-alias-label-primary,#1b1b1c);white-space:nowrap}",
+			".dsh-quota-settings .dsh-status-dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--dsw-static-neutral-bluish-400,#adb2b8)}",
+			".dsh-quota-settings .state-ok .dsh-status-dot{background:var(--dsw-static-green-500,#22c55e)}",
+			".dsh-quota-settings .state-warn .dsh-status-dot{background:var(--dsw-static-amber-500,#f59e0b)}",
+			".dsh-quota-settings .state-error .dsh-status-dot{background:var(--dsw-static-red-500,#ef4444)}",
+			".dsh-quota-settings .qs-sub{font-size:11px;line-height:17px;color:var(--dsw-alias-label-tertiary,#8b9096);word-break:break-word}",
+			".dsh-quota-settings .qs-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:1px}",
+			".dsh-quota-settings .qs-btn{height:30px;padding:0 12px;border:0;border-radius:8px;background:var(--dsw-static-deepseek-500,#4d6bfe);color:#fff;font:inherit;font-weight:600;cursor:pointer}",
+			".dsh-quota-settings .qs-btn:hover{filter:brightness(.96)}",
+			".dsh-quota-settings .qs-btn:disabled{cursor:default;opacity:.6}",
+			".dsh-quota-settings .qs-btn-secondary{height:30px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.1));border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary,#61666b);font:inherit;cursor:pointer}",
+			".dsh-quota-settings .qs-link{color:var(--dsw-static-deepseek-500,#4d6bfe);text-decoration:none;word-break:break-all}",
+			".dsh-quota-settings .qs-success{font-size:12px;color:var(--dsw-static-green-600,#16a34a)}",
+			".dsh-quota-settings .qs-error{font-size:12px;color:var(--dsw-static-red-500,#ef4444)}"
 		].join("\n");
 
 		function tplReplace(template, params) {
@@ -569,6 +629,169 @@
 					React.createElement("div", { id: "dsh-quota-card" }, rowEls));
 			}
 
+			function QuotaSettings() {
+				var openState = React.useState(false);
+				var open = openState[0], setOpen = openState[1];
+				var specsState = React.useState(null);
+				var specs = specsState[0], setSpecs = specsState[1];
+				var dataState = React.useState({});
+				var dataById = dataState[0], setDataById = dataState[1];
+				var authState = React.useState(null);
+				var auth = authState[0], setAuth = authState[1];
+				var phaseState = React.useState("idle");
+				var phase = phaseState[0], setPhase = phaseState[1];
+				var errorState = React.useState(null);
+				var error = errorState[0], setError = errorState[1];
+				var localeState = React.useState(0);
+				var loginStartedRef = React.useRef(0);
+				var deadlineRef = React.useRef(0);
+
+				var loadAccounts = function () {
+					return Promise.all([
+						ctx.connection.rpc.call(CHANNEL, "specs", null),
+						ctx.connection.rpc.call(CHANNEL, "fetch-all", null)
+					]).then(function (results) {
+						var sr = results[0], dr = results[1];
+						if (sr && sr.ok === true && sr.value) setSpecs(sr.value);
+						if (dr && dr.ok === true && dr.value) {
+							var map = {};
+							var rows = dr.value.rows || [];
+							for (var i = 0; i < rows.length; i++) map[rows[i].id] = rows[i];
+							setDataById(map);
+						}
+					}).catch(function (cause) {
+						setError(String((cause && cause.message) || cause));
+					});
+				};
+
+				var loadAuth = function () {
+					return ctx.connection.rpc.call(CHANNEL, "codex-auth-status", null).then(function (result) {
+						if (result && result.ok === true && result.value) {
+							setAuth(result.value);
+							return result.value;
+						}
+						throw new Error(result && result.error ? result.error.message : t("fetchFailed"));
+					}).catch(function (cause) {
+						setError(String((cause && cause.message) || cause));
+						return null;
+					});
+				};
+
+				React.useEffect(function () {
+					loadAccounts();
+					loadAuth();
+					return ctx.locale.subscribe(function () {
+						localeState[1](function (value) { return value + 1; });
+					});
+				}, []);
+
+				React.useEffect(function () {
+					if (phase !== "waiting") return;
+					var check = function () {
+						loadAuth().then(function (value) {
+							if (!value || phaseState[0] !== "waiting") return;
+							var exitedThisRun = typeof value.loginExitAt === "number" && value.loginExitAt >= loginStartedRef.current;
+							if (exitedThisRun && value.loginRunning !== true) {
+								if (value.loginExitCode === 0 && value.configured === true) {
+									setPhase("done");
+									loadAccounts();
+								} else {
+									setPhase("failed");
+								}
+							} else if (Date.now() >= deadlineRef.current) {
+								setPhase("timeout");
+							}
+						});
+					};
+					check();
+					return ctx.interval(check, 2000);
+				}, [phase]);
+
+				function beginLogin() {
+					setError(null);
+					setPhase("waiting");
+					loginStartedRef.current = Date.now();
+					deadlineRef.current = loginStartedRef.current + 4 * 60 * 1000;
+					ctx.connection.rpc.call(CHANNEL, "codex-login", null).then(function (result) {
+						if (!(result && result.ok === true && result.value && (result.value.started || result.value.loginRunning))) {
+							setPhase("failed");
+						}
+						loadAuth();
+					}).catch(function (cause) {
+						setError(String((cause && cause.message) || cause));
+						setPhase("failed");
+					});
+				}
+
+				var accountRows = [];
+				var rows = specs ? (specs.rows || []) : [];
+				for (var ri = 0; ri < rows.length; ri++) {
+					var spec = rows[ri];
+					var view = rowView(t, spec, dataById[spec.id]);
+					var stateClass = view.status === "warn" ? "state-warn" : view.status === "error" ? "state-error" : "state-ok";
+					var summary = view.value || view.sub || t("notAvailable");
+					if (isUsageKind(spec.kind) && view.windows.length > 0) {
+						var pieces = [];
+						for (var wi = 0; wi < view.windows.length; wi++) {
+							var win = view.windows[wi].window;
+							pieces.push((win.key === "weekly" ? t("weeklyShort") : win.label) + " " + win.percentRemaining + "%");
+						}
+						summary = pieces.join(" · ");
+					}
+					accountRows.push(React.createElement("div", { key: spec.id, className: "qs-row " + stateClass },
+						React.createElement("span", { className: "dsh-status-dot" }),
+						React.createElement("span", { className: "qs-name" }, spec.label),
+						React.createElement("span", { className: "qs-value" }, summary)));
+				}
+
+				var signedIn = auth && auth.configured === true;
+				var authMain = signedIn
+					? tplReplace(t("signedInAs"), { email: auth.email || "ChatGPT" })
+					: t("notSignedIn");
+				var authSub = signedIn && auth.lastRefresh
+					? tplReplace(t("authUpdated"), { time: new Date(auth.lastRefresh).toLocaleString() })
+					: t("gatewayNote");
+				var phaseNode = null;
+				if (phase === "waiting") phaseNode = React.createElement("div", { className: "qs-sub" }, t("waitingAuth"));
+				else if (phase === "done") phaseNode = React.createElement("div", { className: "qs-success" }, t("loginDone"));
+				else if (phase === "failed") phaseNode = React.createElement("div", { className: "qs-error" }, t("loginFailed"));
+				else if (phase === "timeout") phaseNode = React.createElement("div", { className: "qs-error" }, t("loginTimeout"));
+
+				var urlNode = auth && auth.loginUrl ? React.createElement("div", { className: "qs-sub" },
+					t("loginOpened"), " ",
+					React.createElement("a", { className: "qs-link", href: auth.loginUrl, target: "_blank", rel: "noreferrer" }, t("openLink"))) : null;
+
+				var body = open ? React.createElement("div", { className: "qs-body" },
+					React.createElement("section", { className: "qs-card" },
+						React.createElement("div", { className: "qs-title" }, t("chatgptTitle")),
+						React.createElement("div", { className: "qs-row " + (signedIn ? "state-ok" : "state-error") },
+							React.createElement("span", { className: "dsh-status-dot" }),
+							React.createElement("span", { className: "qs-name" }, authMain)),
+						React.createElement("div", { className: "qs-sub" }, authSub),
+						phaseNode,
+						urlNode,
+						React.createElement("div", { className: "qs-actions" },
+							React.createElement("button", { className: "qs-btn", type: "button", disabled: phase === "waiting", onClick: beginLogin }, phase === "waiting" ? t("waitingAuth") : t(signedIn ? "relogin" : "login")),
+							React.createElement("button", { className: "qs-btn-secondary", type: "button", onClick: function () { loadAuth(); loadAccounts(); } }, t("refreshStatus")))),
+					React.createElement("section", { className: "qs-card" },
+						React.createElement("div", { className: "qs-title" }, t("accountsTitle")),
+						accountRows.length > 0 ? accountRows : React.createElement("div", { className: "qs-sub" }, t("loading"))),
+					error ? React.createElement("div", { className: "qs-error" }, error) : null) : null;
+
+				return React.createElement("li", { className: "dsh-quota-settings" + (open ? " is-open" : "") },
+					React.createElement("button", {
+						className: "qs-header",
+						type: "button",
+						"aria-expanded": open ? "true" : "false",
+						onClick: function () { setOpen(function (value) { return !value; }); }
+					},
+						React.createElement("span", { className: "qs-head-text" },
+							React.createElement("span", { className: "qs-title" }, t("settingsTab")),
+							React.createElement("span", { className: "qs-description" }, t("settingsDescription"))),
+						React.createElement("span", { className: "qs-chevron", "aria-hidden": "true" }, "⌄")),
+					body);
+			}
+
 			function ProviderRow(props) {
 				var t = props.t;
 				var view = props.view;
@@ -675,6 +898,14 @@
 			ctx.slots.inject("shell.overlay", () => ctx.slots.register(
 				{ name: "shell.overlay", id: "dsh-quota-status", order: 120, label: () => t("title"), locale: NS },
 				(props: any) => React.createElement(QuotaStatus, { t: props.t })
+			));
+
+			// Add one custom card to the shipped Plugin Configuration tab. Its
+			// controls use our loopback RPC directly, so no OAuth secret enters
+			// the browser and no core settings namespace allowlist is required.
+			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register(
+				{ name: "settings.plugin.item", id: "quota-status", order: 40, label: () => t("settingsTab") },
+				() => React.createElement(QuotaSettings, null)
 			));
 		}
 

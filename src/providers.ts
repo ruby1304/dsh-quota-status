@@ -302,10 +302,21 @@ export function parseCodexUsage(payload: unknown): UsageView {
   }
 }
 
+/** Expand a leading `~` to the current home directory. */
+export function expandHome(path: string): string {
+  return path.startsWith('~') ? join(homedir(), path.slice(1)) : path
+}
+
 /** OAuth material from one CLIProxyAPI codex auth file. */
 export interface CodexAuth {
   accessToken: string
   accountId: string
+  /** Account email, when the auth file carries it. */
+  email?: string
+  /** Token expiry timestamp string recorded by CLIProxyAPI. */
+  expired?: string
+  /** Last token-refresh timestamp string recorded by CLIProxyAPI. */
+  lastRefresh?: string
   /** Absolute auth file path — diagnostics only, never sent to the client. */
   file: string
 }
@@ -316,7 +327,7 @@ export interface CodexAuth {
  * all-disabled/malformed files yield undefined (row shows "not configured").
  */
 export function loadCodexAuth(authDir: string): CodexAuth | undefined {
-  const dir = authDir.startsWith('~') ? join(homedir(), authDir.slice(1)) : authDir
+  const dir = expandHome(authDir)
   let names: string[]
   try {
     names = readdirSync(dir)
@@ -340,7 +351,14 @@ export function loadCodexAuth(authDir: string): CodexAuth | undefined {
       const accessToken = typeof rec.access_token === 'string' ? rec.access_token : ''
       const accountId = typeof rec.account_id === 'string' ? rec.account_id : ''
       if (accessToken.length > 0 && accountId.length > 0 && rec.disabled !== true) {
-        return { accessToken, accountId, file: candidate.file }
+        return {
+          accessToken,
+          accountId,
+          ...(typeof rec.email === 'string' && rec.email.length > 0 ? { email: rec.email } : {}),
+          ...(typeof rec.expired === 'string' && rec.expired.length > 0 ? { expired: rec.expired } : {}),
+          ...(typeof rec.last_refresh === 'string' && rec.last_refresh.length > 0 ? { lastRefresh: rec.last_refresh } : {}),
+          file: candidate.file,
+        }
       }
     } catch { /* malformed file → try the next one */ }
   }

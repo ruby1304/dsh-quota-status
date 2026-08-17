@@ -45,6 +45,10 @@ export interface Config {
   warnUsagePercent: number
   /** Usage row "critical" remaining percentage (at or below shows red). */
   criticalUsagePercent: number
+  /** CLIProxyAPI binary used by the settings-tab ChatGPT login action. */
+  codexBinary: string
+  /** CLIProxyAPI config path used by the ChatGPT login action. */
+  codexConfigPath: string
   /** Provider rows. The default list is DeepSeek + Kimi For Coding. */
   providers: ProviderRow[]
 }
@@ -79,6 +83,8 @@ export const ConfigSchema = Schema.object({
   criticalBalance: Schema.number().default(10),
   warnUsagePercent: Schema.number().step(1).min(1).max(100).default(40),
   criticalUsagePercent: Schema.number().step(1).min(0).max(100).default(15),
+  codexBinary: Schema.string().default('cliproxyapi'),
+  codexConfigPath: Schema.string().default('~/.cli-proxy-api/config.yaml'),
   providers: Schema.array(Schema.object({
     id: Schema.string().default(''),
     label: Schema.string().default(''),

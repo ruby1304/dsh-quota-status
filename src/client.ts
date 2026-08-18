@@ -222,6 +222,24 @@
 			return globalThis.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_BOTTOM_EDGE : ROOT_EDGE;
 		}
 
+		function quotaBottomMargin() {
+			return globalThis.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_BOTTOM_MARGIN : SCREEN_MARGIN;
+		}
+
+		/** Pick the edge with more usable space so expansion follows card placement. */
+		function chooseVerticalAnchor(rect, viewportHeight, topMargin, bottomMargin) {
+			var spaceAbove = Math.max(0, rect.top - topMargin);
+			var spaceBelow = Math.max(0, viewportHeight - bottomMargin - rect.bottom);
+			return spaceBelow >= spaceAbove ? "top" : "bottom";
+		}
+
+		/** Correct translate-y after a height change while keeping one edge fixed. */
+		function preserveVerticalAnchor(pos, beforeRect, afterRect, anchor) {
+			var beforeEdge = anchor === "top" ? beforeRect.top : beforeRect.bottom;
+			var afterEdge = anchor === "top" ? afterRect.top : afterRect.bottom;
+			return { dx: pos.dx, dy: pos.dy + beforeEdge - afterEdge };
+		}
+
 		function defaultPos() {
 			return { dx: 0, dy: 0 };
 		}
@@ -252,7 +270,7 @@
 		 */
 		function clampPos(pos, width, height) {
 			var bottomEdge = quotaBottomEdge();
-			var bottomMargin = globalThis.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_BOTTOM_MARGIN : SCREEN_MARGIN;
+			var bottomMargin = quotaBottomMargin();
 			var baseLeft = Math.max(ROOT_EDGE, globalThis.innerWidth - width - ROOT_EDGE);
 			var baseTop = Math.max(ROOT_EDGE, globalThis.innerHeight - height - bottomEdge);
 			var minDx = SCREEN_MARGIN - baseLeft;
@@ -517,6 +535,8 @@
 				var rootRef = React.useRef(null);
 				var dragRef = React.useRef(null);
 				var suppressClickRef = React.useRef(false);
+				var openAnchorRef = React.useRef(null);
+				var transitionRef = React.useRef(null);
 				posRef.current = pos;
 
 				function setPosStateSafe(next) {
@@ -529,7 +549,17 @@
 					if (!el) return;
 					var rect = el.getBoundingClientRect();
 					if (rect.width <= 0 || rect.height <= 0) return;
-					setPosStateSafe(clampPos(posRef.current, rect.width, rect.height));
+					var nextPos = posRef.current;
+					var pending = transitionRef.current;
+					if (pending !== null) {
+						nextPos = preserveVerticalAnchor(nextPos, pending.beforeRect, rect, pending.anchor);
+						transitionRef.current = null;
+					}
+					nextPos = clampPos(nextPos, rect.width, rect.height);
+					if (nextPos.dx !== posRef.current.dx || nextPos.dy !== posRef.current.dy) {
+						setPosStateSafe(nextPos);
+					}
+					if (openId === null) openAnchorRef.current = null;
 				}, [openId, dataById, specs]);
 
 				var loadSpecs = function () {
@@ -622,13 +652,33 @@
 					if (!d || e.pointerId !== d.id) return;
 					dragRef.current = null;
 					draggingState[1](false);
-					if (d.moved) savePos(posRef.current);
+					if (d.moved) {
+						savePos(posRef.current);
+						var el = rootRef.current;
+						if (openId !== null && el) {
+							openAnchorRef.current = chooseVerticalAnchor(el.getBoundingClientRect(), globalThis.innerHeight, SCREEN_MARGIN, quotaBottomMargin());
+						}
+					}
 					window.setTimeout(function () { suppressClickRef.current = false; }, 0);
 				}
 
 				function toggleOpen(id) {
 					if (suppressClickRef.current) return;
-					setOpenId(function (current) { return current === id ? null : id; });
+					var nextOpenId = openId === id ? null : id;
+					var el = rootRef.current;
+					if (el) {
+						var rect = el.getBoundingClientRect();
+						var anchor = openAnchorRef.current;
+						if (anchor === null || openId === null) {
+							anchor = chooseVerticalAnchor(rect, globalThis.innerHeight, SCREEN_MARGIN, quotaBottomMargin());
+						}
+						openAnchorRef.current = anchor;
+						transitionRef.current = {
+							anchor: anchor,
+							beforeRect: { top: rect.top, bottom: rect.bottom }
+						};
+					}
+					setOpenId(nextOpenId);
 				}
 
 				function renderExtraRow(input) {

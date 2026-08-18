@@ -19,7 +19,14 @@ function functionSource(name: string): string {
 }
 
 function loadClientHelpers() {
-  const names = ['fmtCountdown', 'collapsedWindowValue', 'normalizeExtraRow', 'usageState']
+  const names = [
+    'fmtCountdown',
+    'collapsedWindowValue',
+    'normalizeExtraRow',
+    'usageState',
+    'chooseVerticalAnchor',
+    'preserveVerticalAnchor',
+  ]
   const script = `${names.map(functionSource).join('\n')}\nreturn { ${names.join(', ')} }`
   const output = ts.transpileModule(script, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
@@ -28,6 +35,18 @@ function loadClientHelpers() {
     collapsedWindowValue(windowView: { percentRemaining: number; resetAt?: string }, nowMs: number): string
     normalizeExtraRow(input: unknown): Record<string, unknown> | null
     usageState(percent: number, critical: number, warn: number): string
+    chooseVerticalAnchor(
+      rect: { top: number; bottom: number },
+      viewportHeight: number,
+      topMargin: number,
+      bottomMargin: number,
+    ): 'top' | 'bottom'
+    preserveVerticalAnchor(
+      pos: { dx: number; dy: number },
+      beforeRect: { top: number; bottom: number },
+      afterRect: { top: number; bottom: number },
+      anchor: 'top' | 'bottom',
+    ): { dx: number; dy: number }
   }
 }
 
@@ -89,6 +108,39 @@ describe('extra-row display contract', () => {
       id: 'x', label: 'X', status: 'ok',
       view: { kind: 'meter', used: 1, limit: 0, remaining: 0, unit: 'USD', percentRemaining: 0, resetAt: 'bad' },
     })).toBeNull()
+  })
+})
+
+describe('position-aware expansion', () => {
+  const { chooseVerticalAnchor, preserveVerticalAnchor } = loadClientHelpers()
+
+  it('expands down near the top and up near the bottom', () => {
+    expect(chooseVerticalAnchor({ top: 10, bottom: 126 }, 716, 10, 10)).toBe('top')
+    expect(chooseVerticalAnchor({ top: 590, bottom: 706 }, 716, 10, 10)).toBe('bottom')
+    expect(chooseVerticalAnchor({ top: 250, bottom: 366 }, 716, 10, 10)).toBe('top')
+  })
+
+  it('returns to the same edge when opening and closing', () => {
+    const openedAtTop = preserveVerticalAnchor(
+      { dx: 0, dy: 0 },
+      { top: 10, bottom: 126 },
+      { top: -106, bottom: 126 },
+      'top',
+    )
+    expect(openedAtTop).toEqual({ dx: 0, dy: 116 })
+    expect(preserveVerticalAnchor(
+      openedAtTop,
+      { top: 10, bottom: 242 },
+      { top: 126, bottom: 242 },
+      'top',
+    )).toEqual({ dx: 0, dy: 0 })
+
+    expect(preserveVerticalAnchor(
+      { dx: 4, dy: -8 },
+      { top: 590, bottom: 706 },
+      { top: 474, bottom: 706 },
+      'bottom',
+    )).toEqual({ dx: 4, dy: -8 })
   })
 })
 

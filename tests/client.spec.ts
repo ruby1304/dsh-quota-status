@@ -169,3 +169,11 @@ describe('row interaction source contract', () => {
     expect(functionSource('clampPos')).toContain('globalThis.innerHeight - bottomMargin')
   })
 })
+
+describe('settings extension point', () => {
+  it('uses a standalone Plugins tab instead of the namespace-keyed card slot', () => {
+    expect(source).toContain('ctx.slots.inject("settings.plugins.tab"')
+    expect(source).toContain('{ name: "settings.plugins.tab", id: "quota-status"')
+    expect(source).not.toContain('ctx.slots.inject("settings.plugin.item"')
+  })
+})

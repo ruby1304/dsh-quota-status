@@ -23,8 +23,8 @@
 - 60 秒自动刷新（YAML 可调），页面隐藏时暂停，回到前台立即刷新。
 - 中英双语（跟随界面语言），跟随 DSH 设计 token（`--dsw-alias-*`），自动适配深浅主题。
 - 仅回环 Connection RPC（`authority: loopback`），API Key 只在宿主进程解析与使用。
-- **插件配置卡片**：在「设置 → 插件 → 插件配置」中直接查看三类账户状态；ChatGPT 可在这里启动 CLIProxyAPI 浏览器 OAuth 登录或重新登录，无需打开终端。OAuth token 只在宿主进程和本地 auth 文件之间流转。
-- 显示偏好（行、阈值、刷新间隔）继续走 profile YAML 配置，账户登录等交互动作放在插件配置卡片里。
+- **独立配额页签**：在「设置 → 插件 → 配额余量」中直接查看三类账户状态；ChatGPT 可在这里启动 CLIProxyAPI 浏览器 OAuth 登录或重新登录，无需打开终端。OAuth token 只在宿主进程和本地 auth 文件之间流转。
+- 显示偏好（行、阈值、刷新间隔）继续走 profile YAML 配置，账户登录等交互动作放在独立配额页签里。
 
 ## 安装 / Install
 
@@ -95,6 +95,8 @@ npm run typecheck
 npm test
 npm run build          # 输出 lib/（host + client bundle）
 ```
+
+当前 `0.4.1` 分支以 DSH `0.1.0-rc.7` 为兼容目标；设置界面使用 rc.7 官方 `settings.plugins.tab` 扩展点，不再占用需要 Host settings namespace 的 `settings.plugin.item` 卡片 Slot。
 
 - `src/providers.ts`：纯函数适配器，fixture 单测在 `tests/providers.spec.ts`。
 - `src/index.ts`：host 半身，拥有 `/dsh-quota-status` RPC channel（`specs` / `fetch-all`）。

@@ -1094,11 +1094,11 @@
 				(props: any) => React.createElement(QuotaStatus, { t: props.t, renderSlot: props.renderSlot })
 			));
 
-			// Add one custom card to the shipped Plugin Configuration tab. Its
-			// controls use our loopback RPC directly, so no OAuth secret enters
-			// the browser and no core settings namespace allowlist is required.
-			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register(
-				{ name: "settings.plugin.item", id: "quota-status", order: 40, label: () => t("settingsTab") },
+			// Add a standalone Plugins settings tab. The configurable-card slot is
+			// keyed by Host settings namespaces in DSH rc.7, while these controls
+			// intentionally use our loopback RPC and own no settings namespace.
+			ctx.slots.inject("settings.plugins.tab", () => ctx.slots.register(
+				{ name: "settings.plugins.tab", id: "quota-status", order: 40, label: () => t("settingsTab") },
 				() => React.createElement(QuotaSettings, null)
 			));
 		}

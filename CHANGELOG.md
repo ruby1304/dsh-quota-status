@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 — 2026-08-20
+
+- Target DSH `0.1.0-rc.8` with exact client runtime, connection and locale peer/development edges
+- Remove the rc.7 eager-activation flag and obsolete Cordis client-runner package edge
+- Keep React on the implicit rc.8 shared baseline with a development-only local copy
+- Add manifest, shared-module and slot-injection compatibility tests
+
 ## 0.4.1 — 2026-08-18
 
 - Add normalized extension rows for quotas supplied by other host plugins

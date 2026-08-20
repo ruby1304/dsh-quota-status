@@ -29,7 +29,7 @@
 ## 安装 / Install
 
 ```bash
-dsh plugin --profile web add dsh-quota-status
+dsh plugin --profile web add dsh-quota-status@0.4.2 --save-exact --ignore-scripts
 dsh web
 ```
 
@@ -96,7 +96,11 @@ npm test
 npm run build          # 输出 lib/（host + client bundle）
 ```
 
-当前 `0.4.1` 分支以 DSH `0.1.0-rc.7` 为兼容目标；设置界面使用 rc.7 官方 `settings.plugins.tab` 扩展点，不再占用需要 Host settings namespace 的 `settings.plugin.item` 卡片 Slot。
+当前 `0.4.2` 分支精确面向 DSH `0.1.0-rc.8`。Client manifest 使用 rc.8
+的 runtime、connection、locale 动态关系，不再请求 eager activation 或旧的
+Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使用 rc.8
+官方 `settings.plugins.tab` 扩展点，不占用需要 Host settings namespace 的
+`settings.plugin.item` 卡片 Slot。
 
 - `src/providers.ts`：纯函数适配器，fixture 单测在 `tests/providers.spec.ts`。
 - `src/index.ts`：host 半身，拥有 `/dsh-quota-status` RPC channel（`specs` / `fetch-all`）。

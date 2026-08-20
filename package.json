@@ -1,6 +1,6 @@
 {
   "name": "dsh-quota-status",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Live DeepSeek, Kimi and ChatGPT subscription quota widget for DeepSeek Harness web, with an in-app ChatGPT OAuth login card.",
   "type": "module",
   "main": "lib/index.js",
@@ -40,11 +40,10 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-cordis-client-runner"
-      ],
-      "immediately": true
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime"
+      ]
     }
   },
   "keywords": [
@@ -65,19 +64,21 @@
     "prepack": "npm run typecheck && npm run test && npm run build"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "4.0.1"
-  },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/cordis": {
-      "optional": true
-    }
+    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-client-connection": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.8"
   },
   "dependencies": {
     "undici": "^7.29.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-client-connection": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.8",
     "@types/node": "^24.13.3",
+    "react": "18.3.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.0"
   }

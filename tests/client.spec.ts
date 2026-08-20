@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import * as ts from 'typescript'
 
 const source = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
+const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 function functionSource(name: string): string {
   const marker = `function ${name}(`
@@ -175,5 +176,46 @@ describe('settings extension point', () => {
     expect(source).toContain('ctx.slots.inject("settings.plugins.tab"')
     expect(source).toContain('{ name: "settings.plugins.tab", id: "quota-status"')
     expect(source).not.toContain('ctx.slots.inject("settings.plugin.item"')
+  })
+})
+
+describe('DSH rc.8 dynamic client package contract', () => {
+  it('declares exact internal peer/dev edges without eager activation', () => {
+    const expectedInternal = {
+      '@deepseek-ai/dsh-client-connection': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-locale': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.8',
+    }
+    expect(manifest.version).toBe('0.4.2')
+    expect(manifest.dsh.client).toEqual({
+      platform: 'web',
+      inject: Object.keys(expectedInternal),
+    })
+    expect(manifest.dsh.client).not.toHaveProperty('immediately')
+    expect(manifest.dsh.client).not.toHaveProperty('external')
+    for (const [name, version] of Object.entries(expectedInternal)) {
+      expect(manifest.peerDependencies[name]).toBe(version)
+      expect(manifest.devDependencies[name]).toBe(version)
+      expect(manifest.dependencies[name]).toBeUndefined()
+    }
+    expect(manifest.peerDependencies['@deepseek-ai/cordis']).toBe('4.0.1')
+    expect(manifest.devDependencies['@deepseek-ai/cordis']).toBe('4.0.1')
+    expect(manifest.peerDependenciesMeta).toBeUndefined()
+    expect(manifest.dependencies['@deepseek-ai/dsh-cordis-client-runner']).toBeUndefined()
+    expect(manifest.peerDependencies['@deepseek-ai/dsh-cordis-client-runner']).toBeUndefined()
+    expect(manifest.devDependencies['@deepseek-ai/dsh-cordis-client-runner']).toBeUndefined()
+  })
+
+  it('keeps React as an implicit shared baseline with a dev-only local copy', () => {
+    const required = Array.from(source.matchAll(/require\("([^"]+)"\)/g), (match) => match[1])
+    expect(required).toEqual(['react'])
+    expect(manifest.devDependencies.react).toBe('18.3.1')
+    expect(manifest.dependencies.react).toBeUndefined()
+    expect(manifest.peerDependencies.react).toBeUndefined()
+  })
+
+  it('wraps every slot registration in the rc.8 slot injection lifecycle', () => {
+    expect(source.match(/ctx\.slots\.register\(/g)).toHaveLength(2)
+    expect(source.match(/ctx\.slots\.inject\(/g)).toHaveLength(2)
   })
 })

@@ -1095,7 +1095,7 @@
 			));
 
 			// Add a standalone Plugins settings tab. The configurable-card slot is
-			// keyed by Host settings namespaces in DSH rc.7, while these controls
+			// keyed by Host settings namespaces in DSH rc.8, while these controls
 			// intentionally use our loopback RPC and own no settings namespace.
 			ctx.slots.inject("settings.plugins.tab", () => ctx.slots.register(
 				{ name: "settings.plugins.tab", id: "quota-status", order: 40, label: () => t("settingsTab") },

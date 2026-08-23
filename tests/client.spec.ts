@@ -179,14 +179,14 @@ describe('settings extension point', () => {
   })
 })
 
-describe('DSH rc.8 dynamic client package contract', () => {
+describe('DSH rc.2 dynamic client package contract', () => {
   it('declares exact internal peer/dev edges without eager activation', () => {
     const expectedInternal = {
-      '@deepseek-ai/dsh-client-connection': '0.1.0-rc.8',
-      '@deepseek-ai/dsh-client-locale': '0.1.0-rc.8',
-      '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-connection': '0.1.1-rc.2',
+      '@deepseek-ai/dsh-client-locale': '0.1.1-rc.2',
+      '@deepseek-ai/dsh-client-runtime': '0.1.1-rc.2',
     }
-    expect(manifest.version).toBe('0.4.2')
+    expect(manifest.version).toBe('0.4.3')
     expect(manifest.dsh.client).toEqual({
       platform: 'web',
       inject: Object.keys(expectedInternal),
@@ -214,7 +214,7 @@ describe('DSH rc.8 dynamic client package contract', () => {
     expect(manifest.peerDependencies.react).toBeUndefined()
   })
 
-  it('wraps every slot registration in the rc.8 slot injection lifecycle', () => {
+  it('wraps every slot registration in the rc.2 slot injection lifecycle', () => {
     expect(source.match(/ctx\.slots\.register\(/g)).toHaveLength(2)
     expect(source.match(/ctx\.slots\.inject\(/g)).toHaveLength(2)
   })

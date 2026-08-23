@@ -96,9 +96,9 @@ npm test
 npm run build          # 输出 lib/（host + client bundle）
 ```
 
-当前 `0.4.2` 分支精确面向 DSH `0.1.0-rc.8`。Client manifest 使用 rc.8
+当前 `0.4.3` 分支精确面向 DSH `0.1.1-rc.2`。Client manifest 使用 rc.2
 的 runtime、connection、locale 动态关系，不再请求 eager activation 或旧的
-Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使用 rc.8
+Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使用 rc.2
 官方 `settings.plugins.tab` 扩展点，不占用需要 Host settings namespace 的
 `settings.plugin.item` 卡片 Slot。
 

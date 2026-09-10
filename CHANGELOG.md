@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-09-10
+
+- Revalidate the host and client halves against DSH `0.1.5-rc.1` with Cordis `4.0.2`
+- Drop the deleted `dsh-client-runtime` edge; keep only `dsh-client-connection` and `dsh-client-locale`
+- Keep the host-only `quotaStatus` service contract unchanged for sibling plugins
+
 ## 0.4.4 — 2026-08-28
 
 - Provide a host-only `quotaStatus` service for fresh normalized sibling-plugin reads

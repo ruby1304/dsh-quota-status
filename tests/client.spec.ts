@@ -179,14 +179,13 @@ describe('settings extension point', () => {
   })
 })
 
-describe('DSH rc.2 dynamic client package contract', () => {
+describe('DSH 0.1.5-rc.1 dynamic client package contract', () => {
   it('declares exact internal peer/dev edges without eager activation', () => {
     const expectedInternal = {
-      '@deepseek-ai/dsh-client-connection': '0.1.1-rc.2',
-      '@deepseek-ai/dsh-client-locale': '0.1.1-rc.2',
-      '@deepseek-ai/dsh-client-runtime': '0.1.1-rc.2',
+      '@deepseek-ai/dsh-client-connection': '0.1.5-rc.1',
+      '@deepseek-ai/dsh-client-locale': '0.1.5-rc.1',
     }
-    expect(manifest.version).toBe('0.4.4')
+    expect(manifest.version).toBe('0.5.0')
     expect(manifest.dsh.client).toEqual({
       platform: 'web',
       inject: Object.keys(expectedInternal),
@@ -198,8 +197,8 @@ describe('DSH rc.2 dynamic client package contract', () => {
       expect(manifest.devDependencies[name]).toBe(version)
       expect(manifest.dependencies[name]).toBeUndefined()
     }
-    expect(manifest.peerDependencies['@deepseek-ai/cordis']).toBe('4.0.1')
-    expect(manifest.devDependencies['@deepseek-ai/cordis']).toBe('4.0.1')
+    expect(manifest.peerDependencies['@deepseek-ai/cordis']).toBe('4.0.2')
+    expect(manifest.devDependencies['@deepseek-ai/cordis']).toBe('4.0.2')
     expect(manifest.peerDependenciesMeta).toBeUndefined()
     expect(manifest.dependencies['@deepseek-ai/dsh-cordis-client-runner']).toBeUndefined()
     expect(manifest.peerDependencies['@deepseek-ai/dsh-cordis-client-runner']).toBeUndefined()

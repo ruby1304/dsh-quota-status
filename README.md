@@ -96,11 +96,12 @@ npm test
 npm run build          # 输出 lib/（host + client bundle）
 ```
 
-当前 `0.4.4` 分支精确面向 DSH `0.1.1-rc.2`。Client manifest 使用 rc.2
-的 runtime、connection、locale 动态关系，不再请求 eager activation 或旧的
-Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使用 rc.2
-官方 `settings.plugins.tab` 扩展点，不占用需要 Host settings namespace 的
-`settings.plugin.item` 卡片 Slot。
+当前 `0.5.0` 分支精确面向 DSH `0.1.5-rc.1`。Client manifest 只使用
+connection 与 locale 两条存活动态关系——`0.1.5-rc.1` 已删除
+`dsh-client-runtime`，本插件也不再声明该图边——不请求 eager activation
+或旧的 Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使用
+`0.1.5-rc.1` 官方 `settings.plugins.tab` 扩展点，不占用需要 Host settings
+namespace 的 `settings.plugin.item` 卡片 Slot。
 
 - `src/providers.ts`：纯函数适配器，fixture 单测在 `tests/providers.spec.ts`。
 - `src/index.ts`：host 半身，拥有 `/dsh-quota-status` RPC channel（`specs` / `fetch-all`）。

@@ -48,6 +48,8 @@ export type {
 } from './providers.js'
 
 export const RPC_CHANNEL = '/dsh-quota-status'
+export const QUOTA_STATUS_SERVICE = 'quotaStatus'
+export const QUOTA_STATUS_SERVICE_SCHEMA = 'dsh-quota-status/service-v1' as const
 
 /** Structural minimum of the host connection service. */
 interface ConnectionLike {
@@ -82,7 +84,7 @@ interface RowSpec {
   criticalUsagePercent: number
 }
 
-interface RowViewResult {
+export interface RowViewResult {
   id: string
   label: string
   kind: ProviderRow['kind']
@@ -90,6 +92,24 @@ interface RowViewResult {
   status: ProviderResult['status']
   view?: ProviderView
   error?: string
+}
+
+export interface QuotaStatusServiceSnapshot {
+  schemaVersion: typeof QUOTA_STATUS_SERVICE_SCHEMA
+  observedAt: string
+  enabled: boolean
+  rows: RowViewResult[]
+}
+
+export interface QuotaStatusService {
+  /** Fresh host-side read. Credentials and upstream payloads never leave this service. */
+  read(): Promise<QuotaStatusServiceSnapshot>
+}
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    quotaStatus: QuotaStatusService
+  }
 }
 
 const ok = (value: unknown) => ({ ok: true, value })
@@ -178,6 +198,22 @@ export function apply(ctx: Context, config: Config) {
     return results.sort((a, b) => resolved.providers.findIndex((row) => row.id === a.id) - resolved.providers.findIndex((row) => row.id === b.id))
   }
 
+  const quotaStatus: QuotaStatusService = Object.freeze({
+    async read() {
+      const rows = resolved.enabled ? await fetchAll() : []
+      return {
+        schemaVersion: QUOTA_STATUS_SERVICE_SCHEMA,
+        observedAt: new Date().toISOString(),
+        enabled: resolved.enabled,
+        rows,
+      }
+    },
+  })
+  if (ctx.get(QUOTA_STATUS_SERVICE)) {
+    throw new Error(`${QUOTA_STATUS_SERVICE} is already provided by another plugin`)
+  }
+  ctx.provide(QUOTA_STATUS_SERVICE, quotaStatus)
+
   /** Auth dir of the first codex-usage row (settings-tab login/status act on it). */
   const codexAuthDir = () =>
     resolved.providers.find((row) => row.kind === 'codex-usage')?.authDir || DEFAULT_CODEX_AUTH_DIR
@@ -238,10 +274,8 @@ export function apply(ctx: Context, config: Config) {
           return ok({ rows: await resolveSpecs(), refreshMs: resolved.refreshMs, enabled: resolved.enabled })
         }
         if (endpoint === 'fetch-all') {
-          if (!resolved.enabled) {
-            return ok({ rows: [], fetchedAt: Date.now(), enabled: false })
-          }
-          return ok({ rows: await fetchAll(), fetchedAt: Date.now(), enabled: true })
+          const snapshot = await quotaStatus.read()
+          return ok({ rows: snapshot.rows, fetchedAt: Date.parse(snapshot.observedAt), enabled: snapshot.enabled })
         }
         if (endpoint === 'codex-auth-status') {
           const auth = loadCodexAuth(codexAuthDir())

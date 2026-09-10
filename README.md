@@ -96,7 +96,7 @@ npm test
 npm run build          # 输出 lib/（host + client bundle）
 ```
 
-当前 `0.4.3` 分支精确面向 DSH `0.1.1-rc.2`。Client manifest 使用 rc.2
+当前 `0.4.4` 分支精确面向 DSH `0.1.1-rc.2`。Client manifest 使用 rc.2
 的 runtime、connection、locale 动态关系，不再请求 eager activation 或旧的
 Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使用 rc.2
 官方 `settings.plugins.tab` 扩展点，不占用需要 Host settings namespace 的
@@ -104,6 +104,8 @@ Cordis client-runner 边；React 继续由 Web baseline 共享。设置界面使
 
 - `src/providers.ts`：纯函数适配器，fixture 单测在 `tests/providers.spec.ts`。
 - `src/index.ts`：host 半身，拥有 `/dsh-quota-status` RPC channel（`specs` / `fetch-all`）。
+- `quotaStatus`：host-only sibling service，提供同一份 fresh normalized
+  `read()` snapshot 给 Agent Platform；credentials 与 upstream payload 不会跨出 host。
 - `src/client.ts`：浏览器半身，注册 `shell.overlay` 和业务无关的额外配额行子 Slot。
 
 ## 安全 / Security

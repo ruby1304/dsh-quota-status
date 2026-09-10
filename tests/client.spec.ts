@@ -186,7 +186,7 @@ describe('DSH rc.2 dynamic client package contract', () => {
       '@deepseek-ai/dsh-client-locale': '0.1.1-rc.2',
       '@deepseek-ai/dsh-client-runtime': '0.1.1-rc.2',
     }
-    expect(manifest.version).toBe('0.4.3')
+    expect(manifest.version).toBe('0.4.4')
     expect(manifest.dsh.client).toEqual({
       platform: 'web',
       inject: Object.keys(expectedInternal),

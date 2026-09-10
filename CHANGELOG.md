@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4 — 2026-08-28
+
+- Provide a host-only `quotaStatus` service for fresh normalized sibling-plugin reads
+- Keep DeepSeek, Kimi, and OpenAI subscription credentials inside the existing host boundary
+- Reuse the same reader for the browser RPC and the Agent Platform metering surface
+
 ## 0.4.3 — 2026-08-23
 
 - Pin the client runtime, connection and locale peer/development graph to DSH `0.1.1-rc.2`
